@@ -210,7 +210,7 @@
 
     applyPlayerMode("audio");
 
-    /* ── FIX pulse: убирать пульс только при реальной загрузке медиа ── */
+    /* ── FIX pulse ── */
     function stopPulse() {
       if (btnLoadLocal) btnLoadLocal.classList.remove("pulse");
     }
@@ -230,10 +230,8 @@
       applyPlayerMode(mode);
       setSrc(url, "local");
       toast(mode === "video" ? "🎬 Открыто видео" : "🎵 Открыто аудио", f.name);
-      /* FIX pulse: НЕ снимаем тут — ждём loadeddata */
     });
 
-    /* FIX pulse: снимаем пульс только когда медиа реально загрузилось */
     player.addEventListener("loadeddata", () => {
       stopPulse();
       if (player.videoHeight > 0) applyPlayerMode("video");
@@ -247,7 +245,6 @@
       } else {
         btnLoadYaDisk.addEventListener("click", () => {
           window.open(yadiskUrl, "yadisk", "width=700,height=500,left=300,top=100");
-          /* FIX pulse: начинаем мигать */
           startPulse();
           toast("📥 Скачайте файл с Яндекс.Диска", "Затем нажмите мигающую кнопку «📁 Выбрать файл»");
         });
@@ -296,6 +293,7 @@
         toast("Нужны Start и End"); return;
       }
       stopLoop();
+      player.loop = false; // фрагментом управляем сами
       player.currentTime = Number(s);
       player.play().catch(() => {});
       loopTimer = setInterval(() => {
@@ -346,11 +344,20 @@
 
     /* ── active line ── */
     function setActive(idx, seek) {
+      const wasPlaying = loopTimer !== null && !player.paused;
+      stopLoop();
       activeIndex = Math.max(0, Math.min(idx, state.items.length - 1));
       renderLines();
       const it = state.items[activeIndex];
       if (seek && it?.start != null && Number.isFinite(it.start))
         player.currentTime = Math.max(0, Number(it.start));
+      // Если был зацикленный фрагмент — сразу запустить новый
+      if (wasPlaying) {
+        const ni = state.items[activeIndex];
+        if (ni?.start != null && ni?.end != null && Number(ni.end) > Number(ni.start)) {
+          setTimeout(() => playSegment(), 50);
+        }
+      }
     }
 
     /* ── render lines ── */
@@ -539,6 +546,19 @@
     /* ── start ── */
     renderLines();
     setActive(0, false);
+
+    /* ── whole-file loop via player controls ── */
+    player.addEventListener("play", () => {
+      // Если loopTimer уже работает (фрагмент) — не трогаем
+      if (loopTimer) return;
+      // Устанавливаем loop атрибут по галочке
+      player.loop = loopToggle.checked;
+    });
+
+    loopToggle.addEventListener("change", () => {
+      // Обновляем встроенный loop для целого файла
+      player.loop = loopToggle.checked;
+    });
 
     /* ── keyboard shortcuts ── */
     document.addEventListener("keydown", (e) => {
