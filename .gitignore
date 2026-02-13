@@ -1,0 +1,24 @@
+# Media files — never commit
+*.mp3
+*.mp4
+*.mkv
+*.m4a
+*.wav
+*.flac
+*.aac
+*.avi
+*.mov
+*.ogv
+*.wma
+*.opus
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
