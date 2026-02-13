@@ -246,7 +246,7 @@
         btnLoadYaDisk.style.display = "none";
       } else {
         btnLoadYaDisk.addEventListener("click", () => {
-          window.open(yadiskUrl, "yadisk", "width=700,height=500,left=100,top=100");
+          window.open(yadiskUrl, "yadisk", "width=700,height=500,left=300,top=100");
           /* FIX pulse: начинаем мигать */
           startPulse();
           toast("📥 Скачайте файл с Яндекс.Диска", "Затем нажмите мигающую кнопку «📁 Выбрать файл»");
