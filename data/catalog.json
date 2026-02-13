@@ -1,0 +1,26 @@
+{
+  "languages": [
+    { "code": "no", "name": "Norsk" },
+    { "code": "it", "name": "Italiano" }
+  ],
+  "songs": [
+    {
+      "id": "store-hav",
+      "title": "Store Hav",
+      "artist": "Kamilla Wigestrand",
+      "language": "no",
+      "languageName": "Norsk",
+      "url": "songs/store-hav/",
+      "short": "Учим норвежский на слух по фрагментам"
+    },
+    {
+      "id": "febbre",
+      "title": "Febbre",
+      "artist": "Clara",
+      "language": "it",
+      "languageName": "Italiano",
+      "url": "songs/febbre/",
+      "short": "Учим итальянский на слух по фрагментам"
+    }
+  ]
+}
