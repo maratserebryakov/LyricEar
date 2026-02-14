@@ -1,4 +1,4 @@
-;(function () {
+;;(function () {
   /* ── helpers ── */
   const $ = (s, r = document) => r.querySelector(s);
 
@@ -131,9 +131,9 @@
       const range = STOPS[hi][0] - STOPS[lo][0] || 1;
       const f = (t - STOPS[lo][0]) / range;
       LUT[i] = [
-        Math.round(STOPS[lo][[1]](#annotation-99713-0) + (STOPS[hi][[1]](#annotation-99713-0) - STOPS[lo][[1]](#annotation-99713-0)) * f),
-        Math.round(STOPS[lo][[2]](#annotation-99713-1) + (STOPS[hi][[2]](#annotation-99713-1) - STOPS[lo][[2]](#annotation-99713-1)) * f),
-        Math.round(STOPS[lo][[3]](#annotation-99713-2) + (STOPS[hi][[3]](#annotation-99713-2) - STOPS[lo][[3]](#annotation-99713-2)) * f)
+        Math.round(STOPS[lo][1] + (STOPS[hi][1] - STOPS[lo][1]) * f),
+        Math.round(STOPS[lo][2] + (STOPS[hi][2] - STOPS[lo][2]) * f),
+        Math.round(STOPS[lo][3] + (STOPS[hi][3] - STOPS[lo][3]) * f)
       ];
     }
 
@@ -169,7 +169,7 @@
       canvas.height = Math.round(rect.height * dpr);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       const bg = LUT[0];
-      ctx.fillStyle = `rgb(${bg[0]},${bg[[1]](#annotation-99713-0)},${bg[[2]](#annotation-99713-1)})`;
+      ctx.fillStyle = `rgb(${bg[0]},${bg[1]},${bg[2]})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       writeX = 0;
     }
@@ -197,8 +197,8 @@
         const c = LUT[val];
         const off = y * 4;
         d[off]     = c[0];
-        d[off + 1] = c[[1]](#annotation-99713-0);
-        d[off + 2] = c[[2]](#annotation-99713-1);
+        d[off + 1] = c[1];
+        d[off + 2] = c[2];
         d[off + 3] = 255;
       }
       ctx.putImageData(col, writeX, 0);
@@ -792,9 +792,9 @@
   }
 
   /* boot */
- window.addEventListener("DOMContentLoaded", async () => {
+  window.addEventListener("DOMContentLoaded", async () => {
     showStorageConsent();
     try { await bootSongPage(); } catch(e) { console.error("bootSongPage error:", e); }
-    try { await bootHome(); } catch(e) { console.error("bootHome error:", e); alert("Ошибка каталога: " + e.message); }
-});
+    try { await bootHome(); } catch(e) { console.error("bootHome error:", e); }
+  });
 })();
