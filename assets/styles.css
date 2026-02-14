@@ -164,18 +164,31 @@ button:disabled {
   margin-bottom: 6px;
 }
 
-.player {
+/* ── Video: full width, top half visible, crop bottom ── */
+.video-wrap {
+  position: relative;
   width: 100%;
-  border-radius: 8px;
+  height: 50vh;
+  overflow: hidden;
+  border-radius: var(--radius);
   background: #000;
+  margin-bottom: 0;
 }
-.player.is-audio {
-  height: 48px;
-  object-fit: contain;
+.video-wrap video {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  min-height: 100%;
+  object-fit: cover;
+  object-position: center top;
 }
-.player.is-video {
-  max-height: 50vh;
-  object-fit: contain;
+
+/* when audio — hide the video wrapper */
+.video-wrap.is-audio {
+  height: 0;
+  overflow: hidden;
 }
 
 .media-row {
@@ -184,6 +197,44 @@ button:disabled {
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 8px;
+}
+
+/* ── Play row (custom controls) ── */
+.play-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+  padding: 0;
+}
+#btnPlay {
+  font-size: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+#btnPlay:active { background: var(--accent); color: #fff; }
+#playTime {
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+#playProgress {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 /* ── Lamp ── */
@@ -458,52 +509,3 @@ button:disabled {
 .songTitle { font-weight: 600; font-size: 1.1rem; color: var(--accent2); }
 .songMeta  { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 .songSmall { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
-/* ── Fix: compact media player ── */
-#player.is-audio {
-  width: 100%;
-  height: 0;
-  overflow: hidden;
-}
-#player.is-video {
-  width: 100%;
-  max-height: 180px;
-  object-fit: contain;
-  border-radius: var(--radius);
-  background: #000;
-}
-
-/* custom play button */
-.play-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 8px 0;
-}
-#btnPlay {
-  font-size: 28px;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: 2px solid var(--accent);
-  background: var(--surface);
-  color: var(--accent);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-#btnPlay:active { background: var(--accent); color: #fff; }
-
-#playTime {
-  font-family: monospace;
-  font-size: 14px;
-  color: var(--muted);
-}
-#playProgress {
-  flex: 1;
-  height: 6px;
-  border-radius: 3px;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
