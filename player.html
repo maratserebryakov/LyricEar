@@ -17,45 +17,50 @@
     <p id="songHint" class="hint"></p>
   </header>
 
-  <!-- ═══ Player ═══ -->
-  <section id="playerSection" class="panel player-panel sticky-player">
-    <div class="media-bar">
-      <span class="mini">MEDIA</span>
-      <span class="lamp lamp-off" id="mediaLamp"></span>
-      <span class="mini mono" id="tNow">0.00s</span>
-    </div>
+  <!-- ═══ Sticky block: player + spectrogram ═══ -->
+  <div id="stickyBlock" class="sticky-block">
 
-    <div id="videoWrap" class="video-wrap is-audio">
-      <video id="player" playsinline preload="auto"></video>
-    </div>
+    <!-- Player -->
+    <section class="panel player-panel">
+      <div class="media-bar">
+        <span class="mini">MEDIA</span>
+        <span class="lamp lamp-off" id="mediaLamp"></span>
+        <span class="mini mono" id="tNow">0.00s</span>
+      </div>
 
-    <div class="play-row">
-      <button id="btnPlay">▶</button>
-      <input type="range" id="playProgress" min="0" max="1000" value="0">
-      <span id="playTime">0:00 / 0:00</span>
-    </div>
+      <div id="videoWrap" class="video-wrap is-audio">
+        <video id="player" playsinline preload="auto"></video>
+      </div>
 
-    <div class="media-row">
-      <button class="ghost pulse" id="btnLoadLocal">📁 Выбрать файл</button>
-      <input type="file" id="mediaPick" accept="audio/*,video/*" hidden>
-      <button class="primary" id="btnLoadYaDisk">☁ Яндекс.Диск</button>
-      <button class="bad tiny" id="btnForgetMedia" style="display:none">🗑 Забыть</button>
-      <span class="mini mono" id="mediaName"></span>
-    </div>
-  </section>
+      <div class="play-row">
+        <button id="btnPlay">▶</button>
+        <input type="range" id="playProgress" min="0" max="1000" value="0">
+        <span id="playTime">0:00 / 0:00</span>
+      </div>
 
-  <!-- ═══ Spectrogram ═══ -->
-  <section class="panel spec-panel">
-    <div class="spec-toolbar">
-      <button class="ghost" id="spectrogramToggle">📊 Спектрограмма ▾</button>
-      <button class="ghost spec-zoom-btn" id="specZoomOut">−</button>
-      <span class="mini mono" id="specZoomLabel">×1</span>
-      <button class="ghost spec-zoom-btn" id="specZoomIn">+</button>
-    </div>
-    <div id="spectrogramWrap" class="spec-wrap">
-      <canvas id="spectrogramCanvas"></canvas>
-    </div>
-  </section>
+      <div class="media-row">
+        <button class="ghost pulse" id="btnLoadLocal">📁 Выбрать файл</button>
+        <input type="file" id="mediaPick" accept="audio/*,video/*" hidden>
+        <button class="primary" id="btnLoadYaDisk">☁ Яндекс.Диск</button>
+        <button class="bad tiny" id="btnForgetMedia" style="display:none">🗑 Забыть</button>
+        <span class="mini mono" id="mediaName"></span>
+      </div>
+    </section>
+
+    <!-- Spectrogram -->
+    <section class="panel spec-panel">
+      <div class="spec-toolbar">
+        <button class="ghost" id="spectrogramToggle">📊 Спектрограмма ▾</button>
+        <button class="ghost spec-zoom-btn" id="specZoomOut">−</button>
+        <span class="mini mono" id="specZoomLabel">×1</span>
+        <button class="ghost spec-zoom-btn" id="specZoomIn">+</button>
+      </div>
+      <div id="spectrogramWrap" class="spec-wrap">
+        <canvas id="spectrogramCanvas"></canvas>
+      </div>
+    </section>
+
+  </div>
 
   <!-- ═══ Segment controls ═══ -->
   <section class="panel">
@@ -97,6 +102,6 @@
     </p>
   </footer>
 
-  <script src="assets/app.js?v=3"></script>
+  <script src="assets/app.js?v=4"></script>
 </body>
 </html>
