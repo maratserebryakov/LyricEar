@@ -373,3 +373,34 @@ textarea { width: 100%; min-height: 110px; resize: vertical; }
 /* ═══ Legacy ═══ */
 .videoDockSentinel { display: none; }
 .playerWrap { /* legacy class — больше не используется в grid */ }
+/* ═══ Save indicator ═══ */
+.save-indicator {
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.35;
+  padding: 10px 0 2px;
+  user-select: none;
+  transition: opacity 0.3s;
+}
+.save-indicator.flash {
+  opacity: 0.9;
+}
+
+/* ═══ Page footer with reset ═══ */
+.page-footer {
+  text-align: center;
+  padding: 32px 0 24px;
+}
+.link-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.2;
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: opacity 0.2s;
+}
+.link-btn:hover {
+  opacity: 0.55;
+}
