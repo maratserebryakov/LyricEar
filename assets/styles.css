@@ -458,3 +458,52 @@ button:disabled {
 .songTitle { font-weight: 600; font-size: 1.1rem; color: var(--accent2); }
 .songMeta  { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 .songSmall { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+/* ── Fix: compact media player ── */
+#player.is-audio {
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+}
+#player.is-video {
+  width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: var(--radius);
+  background: #000;
+}
+
+/* custom play button */
+.play-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+#btnPlay {
+  font-size: 28px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+#btnPlay:active { background: var(--accent); color: #fff; }
+
+#playTime {
+  font-family: monospace;
+  font-size: 14px;
+  color: var(--muted);
+}
+#playProgress {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
