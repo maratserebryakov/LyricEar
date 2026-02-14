@@ -112,7 +112,6 @@
     let rafId = null;
     let running = false;
 
-    /* palette: logo-inspired purple gradient */
     const STOPS = [
       [0.00,  10,   8,  28],
       [0.15,  30,  15,  70],
@@ -132,9 +131,9 @@
       const range = STOPS[hi][0] - STOPS[lo][0] || 1;
       const f = (t - STOPS[lo][0]) / range;
       LUT[i] = [
-        Math.round(STOPS[lo][1] + (STOPS[hi][1] - STOPS[lo][1]) * f),
-        Math.round(STOPS[lo][2] + (STOPS[hi][2] - STOPS[lo][2]) * f),
-        Math.round(STOPS[lo][3] + (STOPS[hi][3] - STOPS[lo][3]) * f)
+        Math.round(STOPS[lo][[1]](#annotation-99713-0) + (STOPS[hi][[1]](#annotation-99713-0) - STOPS[lo][[1]](#annotation-99713-0)) * f),
+        Math.round(STOPS[lo][[2]](#annotation-99713-1) + (STOPS[hi][[2]](#annotation-99713-1) - STOPS[lo][[2]](#annotation-99713-1)) * f),
+        Math.round(STOPS[lo][[3]](#annotation-99713-2) + (STOPS[hi][[3]](#annotation-99713-2) - STOPS[lo][[3]](#annotation-99713-2)) * f)
       ];
     }
 
@@ -170,7 +169,7 @@
       canvas.height = Math.round(rect.height * dpr);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       const bg = LUT[0];
-      ctx.fillStyle = `rgb(${bg[0]},${bg[1]},${bg[2]})`;
+      ctx.fillStyle = `rgb(${bg[0]},${bg[[1]](#annotation-99713-0)},${bg[[2]](#annotation-99713-1)})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       writeX = 0;
     }
@@ -198,8 +197,8 @@
         const c = LUT[val];
         const off = y * 4;
         d[off]     = c[0];
-        d[off + 1] = c[1];
-        d[off + 2] = c[2];
+        d[off + 1] = c[[1]](#annotation-99713-0);
+        d[off + 2] = c[[2]](#annotation-99713-1);
         d[off + 3] = 255;
       }
       ctx.putImageData(col, writeX, 0);
@@ -347,6 +346,26 @@
     let activeIndex = 0;
     let loopTimer = null;
 
+    /* ── wrap video element in .video-wrap div ── */
+    let videoWrap = null;
+    if (player) {
+      videoWrap = document.createElement("div");
+      videoWrap.className = "video-wrap is-audio";
+      player.parentNode.insertBefore(videoWrap, player);
+      videoWrap.appendChild(player);
+    }
+
+    /* ── create play-row controls dynamically ── */
+    const playRow = document.createElement("div");
+    playRow.className = "play-row";
+    playRow.innerHTML = `<button id="btnPlay">▶</button><input type="range" id="playProgress" min="0" max="1000" value="0"><span id="playTime">0:00 / 0:00</span>`;
+    if (videoWrap) {
+      videoWrap.parentNode.insertBefore(playRow, videoWrap.nextSibling);
+    }
+    const btnPlay      = $("#btnPlay");
+    const playProgress = $("#playProgress");
+    const playTime     = $("#playTime");
+
     /* header */
     function applyHeader() {
       const t = $("#songTitle");  if (t) t.textContent = state.song?.title || "—";
@@ -390,8 +409,10 @@
       return false;
     }
     function applyMode(v) {
-      player.classList.toggle("is-video", v);
-      player.classList.toggle("is-audio", !v);
+      if (videoWrap) {
+        videoWrap.classList.toggle("is-video", v);
+        videoWrap.classList.toggle("is-audio", !v);
+      }
     }
     applyMode(false);
 
@@ -408,7 +429,6 @@
       showForgetBtn(true);
       if (btnLoadLocal) btnLoadLocal.classList.remove("pulse");
 
-      /* init spectrogram after media element has src */
       if (specCanvas && !spec) {
         spec = createSpectrogram(specCanvas, player);
       }
@@ -463,12 +483,7 @@
       }
     }
 
-    /* player events */
-        /* ── custom play/pause button ── */
-    const btnPlay = $("#btnPlay");
-    const playProgress = $("#playProgress");
-    const playTime = $("#playTime");
-
+    /* ── custom play/pause ── */
     function fmtTime(t) {
       if (!Number.isFinite(t)) return "0:00";
       const m = Math.floor(t / 60);
@@ -487,22 +502,38 @@
     player.addEventListener("pause", () => { if (btnPlay) btnPlay.textContent = "▶"; });
     player.addEventListener("ended", () => { if (btnPlay) btnPlay.textContent = "▶"; });
 
+    /* progress bar & time */
+    player.addEventListener("timeupdate", () => {
+      if (elNow) elNow.textContent = (player.currentTime || 0).toFixed(2) + "s";
+      if (playProgress && player.duration) {
+        playProgress.value = (player.currentTime / player.duration * 1000).toFixed(0);
+      }
+      if (playTime) {
+        playTime.textContent = fmtTime(player.currentTime) + " / " + fmtTime(player.duration);
+      }
+    });
     if (playProgress) {
-      player.addEventListener("timeupdate", () => {
-        if (player.duration) playProgress.value = (player.currentTime / player.duration * 1000).toFixed(0);
-        if (playTime) playTime.textContent = fmtTime(player.currentTime) + " / " + fmtTime(player.duration);
-      });
       playProgress.addEventListener("input", () => {
         if (player.duration) player.currentTime = (playProgress.value / 1000) * player.duration;
       });
     }
-    player.addEventListener("timeupdate", () => { if (elNow) elNow.textContent = (player.currentTime || 0).toFixed(2) + "s"; });
-    player.addEventListener("loadedmetadata", () => { if (btnStart) btnStart.disabled = false; if (btnEnd) btnEnd.disabled = false; renderSegStatus(); });
-    player.addEventListener("loadeddata", () => { if (btnLoadLocal) btnLoadLocal.classList.remove("pulse"); if (player.videoHeight > 0) applyMode(true); });
+
+    player.addEventListener("loadedmetadata", () => {
+      if (btnStart) btnStart.disabled = false;
+      if (btnEnd) btnEnd.disabled = false;
+      renderSegStatus();
+    });
+    player.addEventListener("loadeddata", () => {
+      if (btnLoadLocal) btnLoadLocal.classList.remove("pulse");
+      if (player.videoHeight > 0) applyMode(true);
+    });
     player.addEventListener("error", () => { toast("Ошибка медиа"); setLamp("none"); });
 
     /* spectrogram ↔ player */
     player.addEventListener("play", () => {
+      if (!spec && specCanvas) {
+        spec = createSpectrogram(specCanvas, player);
+      }
       if (spec) { spec.ensureAudio(); spec.clear(); spec.start(); }
     });
     player.addEventListener("pause", () => { if (spec) spec.stop(); });
@@ -618,7 +649,6 @@
         const line = document.createElement("div");
         line.className = "line" + (isAct ? " active" : "") + (it.learned ? " learned" : "");
 
-        /* header: number + input */
         const hdr = document.createElement("div"); hdr.className = "line-header";
         const num = document.createElement("span"); num.className = "line-num"; num.textContent = idx + 1;
         const inp = document.createElement("input");
@@ -628,7 +658,6 @@
         inp.addEventListener("click", e => e.stopPropagation());
         hdr.appendChild(num); hdr.appendChild(inp);
 
-        /* orig row */
         const origRow = document.createElement("div"); origRow.className = "orig-row";
         let revealed = sO;
         const origTxt = document.createElement("span"); origTxt.className = "orig-text";
@@ -642,7 +671,6 @@
         });
         origRow.appendChild(btnR); origRow.appendChild(origTxt);
 
-        /* sub rows */
         const phonRow  = document.createElement("div"); phonRow.className  = "sub sub-phon"  + (sP ? " visible" : "");
         if (it.phonetic) phonRow.innerHTML = `<div class="subCard"><b>👂</b> <span class="mono phon-author">${esc(it.phonetic)}</span></div>`;
 
@@ -655,7 +683,6 @@
           whyRow.innerHTML = `<div class="subCard"><b>🧠</b>${conf}<div style="margin-top:4px">${esc(it.why)}</div></div>`;
         }
 
-        /* actions */
         const acts = document.createElement("div"); acts.className = "line-actions";
         function mb(t, c, fn) { const b = document.createElement("button"); b.className = c; b.textContent = t; b.addEventListener("click", e => { e.stopPropagation(); fn(); }); return b; }
         acts.appendChild(mb("Выбрать", "tiny btn-primary", () => setActive(idx, true)));
