@@ -18,29 +18,30 @@
   </header>
 
   <!-- ═══ Player ═══ -->
-  <section class="panel player-panel">
+  <section id="playerSection" class="panel player-panel sticky-player">
     <div class="media-bar">
       <span class="mini">MEDIA</span>
       <span class="lamp lamp-off" id="mediaLamp"></span>
       <span class="mini mono" id="tNow">0.00s</span>
     </div>
-    <video id="player" class="player is-audio" playsinline preload="auto"></video>
 
-                <div class="media-row">
-              <button class="ghost pulse" id="btnLoadLocal">📁 Выбрать файл</button>
-              <input type="file" id="mediaPick" accept="audio/*,video/*" hidden>
-              <button class="primary" id="btnLoadYaDisk">☁ Яндекс.Диск</button>
-              <button class="bad tiny" id="btnForgetMedia" style="display:none">🗑 Забыть</button>
-              <span class="mini mono" id="mediaName"></span>
-            </div>
+    <div id="videoWrap" class="video-wrap is-audio">
+      <video id="player" playsinline preload="auto"></video>
+    </div>
 
-            <video id="player" playsinline preload="auto"></video>
+    <div class="play-row">
+      <button id="btnPlay">▶</button>
+      <input type="range" id="playProgress" min="0" max="1000" value="0">
+      <span id="playTime">0:00 / 0:00</span>
+    </div>
 
-            <div class="play-row">
-              <button id="btnPlay">▶</button>
-              <input type="range" id="playProgress" min="0" max="1000" value="0">
-              <span id="playTime">0:00 / 0:00</span>
-            </div>
+    <div class="media-row">
+      <button class="ghost pulse" id="btnLoadLocal">📁 Выбрать файл</button>
+      <input type="file" id="mediaPick" accept="audio/*,video/*" hidden>
+      <button class="primary" id="btnLoadYaDisk">☁ Яндекс.Диск</button>
+      <button class="bad tiny" id="btnForgetMedia" style="display:none">🗑 Забыть</button>
+      <span class="mini mono" id="mediaName"></span>
+    </div>
   </section>
 
   <!-- ═══ Spectrogram ═══ -->
@@ -96,6 +97,6 @@
     </p>
   </footer>
 
-  <script src="assets/app.js"></script>
+  <script src="assets/app.js?v=3"></script>
 </body>
 </html>
