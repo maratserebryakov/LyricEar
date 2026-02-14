@@ -497,12 +497,24 @@
 
     /* spectrogram UI */
     if (specToggle && specWrap) {
-      specToggle.addEventListener("click", () => {
-        const c = specWrap.classList.toggle("collapsed");
-        specToggle.textContent = c ? "📊 Спектрограмма ▸" : "📊 Спектрограмма ▾";
-        if (!c && spec) spec.resetCanvas();
-      });
+  specToggle.addEventListener("click", () => {
+    const c = specWrap.classList.toggle("collapsed");
+    specToggle.textContent = c ? "📊 Спектрограмма ▸" : "📊 Спектрограмма ▾";
+    if (!c) {
+      // wait for CSS transition to finish, then reset canvas
+      setTimeout(() => {
+        if (spec) spec.resetCanvas();
+        // if player is playing, restart drawing
+        if (spec && !player.paused) {
+          spec.ensureAudio();
+          spec.start();
+        }
+      }, 300);
+    } else {
+      if (spec) spec.stop();
     }
+  });
+}
     function updateZL() { if (specZoomLbl && spec) specZoomLbl.textContent = `×${spec.getZoom()}`; }
     if (specZoomIn)  specZoomIn.addEventListener("click",  () => { if (spec) { spec.zoomIn();  updateZL(); } });
     if (specZoomOut) specZoomOut.addEventListener("click", () => { if (spec) { spec.zoomOut(); updateZL(); } });
