@@ -211,7 +211,12 @@
       rafId = requestAnimationFrame(loop);
     }
 
-    function start()   { if (!ensureAudio()) return; if (audioCtx.state === "suspended") audioCtx.resume(); running = true; loop(); }
+    function start() {
+      if (!ensureAudio()) return;
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      running = true;
+      loop();
+    }
     function stop()    { running = false; if (rafId) { cancelAnimationFrame(rafId); rafId = null; } }
     function clear()   { stop(); resetCanvas(); }
     function zoomIn()  { if (zoom < 4) { zoom *= 2; clear(); } }
@@ -312,8 +317,9 @@
     const songId = state.song?.id || slug;
     if (state.song?.title) document.title = `${state.song.title} — LyricEar`;
 
-    /* DOM */
+    /* DOM — all from HTML, no dynamic creation */
     const player         = $("#player");
+    const videoWrap      = $("#videoWrap");
     const mediaPick      = $("#mediaPick");
     const btnLoadLocal   = $("#btnLoadLocal");
     const btnLoadYaDisk  = $("#btnLoadYaDisk");
@@ -321,6 +327,9 @@
     const mediaName      = $("#mediaName");
     const lamp           = $("#mediaLamp");
     const elNow          = $("#tNow");
+    const btnPlay        = $("#btnPlay");
+    const playProgress   = $("#playProgress");
+    const playTime       = $("#playTime");
     const btnPlaySeg     = $("#btnPlaySeg");
     const btnStart       = $("#btnStart");
     const btnEnd         = $("#btnEnd");
@@ -345,26 +354,6 @@
     let spec = null;
     let activeIndex = 0;
     let loopTimer = null;
-
-    /* ── wrap video element in .video-wrap div ── */
-    let videoWrap = null;
-    if (player) {
-      videoWrap = document.createElement("div");
-      videoWrap.className = "video-wrap is-audio";
-      player.parentNode.insertBefore(videoWrap, player);
-      videoWrap.appendChild(player);
-    }
-
-    /* ── create play-row controls dynamically ── */
-    const playRow = document.createElement("div");
-    playRow.className = "play-row";
-    playRow.innerHTML = `<button id="btnPlay">▶</button><input type="range" id="playProgress" min="0" max="1000" value="0"><span id="playTime">0:00 / 0:00</span>`;
-    if (videoWrap) {
-      videoWrap.parentNode.insertBefore(playRow, videoWrap.nextSibling);
-    }
-    const btnPlay      = $("#btnPlay");
-    const playProgress = $("#playProgress");
-    const playTime     = $("#playTime");
 
     /* header */
     function applyHeader() {
@@ -483,7 +472,7 @@
       }
     }
 
-    /* ── custom play/pause ── */
+    /* ── play/pause ── */
     function fmtTime(t) {
       if (!Number.isFinite(t)) return "0:00";
       const m = Math.floor(t / 60);
