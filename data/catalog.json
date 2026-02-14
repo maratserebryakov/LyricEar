@@ -10,7 +10,7 @@
       "artist": "Kamilla Wigestrand",
       "language": "no",
       "languageName": "Norsk",
-      "url": "songs/store-hav/",
+      "url": "player.html?song=store-hav",
       "short": "Учим норвежский на слух по фрагментам"
     },
     {
@@ -19,7 +19,7 @@
       "artist": "Clara",
       "language": "it",
       "languageName": "Italiano",
-      "url": "songs/febbre/",
+      "url": "player.html?song=febbre",
       "short": "Учим итальянский на слух по фрагментам"
     }
   ]
