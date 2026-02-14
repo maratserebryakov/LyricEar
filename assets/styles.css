@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════
-   LyricEar — styles.css (unified)
+   LyricEar — styles.css (unified v3)
    ══════════════════════════════════════ */
 
 /* ── Reset & base ── */
@@ -154,6 +154,14 @@ button:disabled {
   margin-bottom: 10px;
 }
 
+/* ── Sticky player ── */
+.sticky-player {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--card);
+}
+
 /* ── Player ── */
 .player-panel { padding: 10px; }
 
@@ -164,31 +172,36 @@ button:disabled {
   margin-bottom: 6px;
 }
 
-/* ── Video: full width, top half visible, crop bottom ── */
+/* ── Video wrap ── */
 .video-wrap {
   position: relative;
   width: 100%;
-  height: 50vh;
-  overflow: hidden;
   border-radius: var(--radius);
   background: #000;
   margin-bottom: 0;
-}
-.video-wrap video {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  min-height: 100%;
-  object-fit: cover;
-  object-position: center top;
+  overflow: hidden;
 }
 
-/* when audio — hide the video wrapper */
+.video-wrap.is-video {
+  aspect-ratio: 16 / 9;
+  max-height: 50vh;
+}
+
+.video-wrap.is-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* when audio — hide the video wrapper completely */
 .video-wrap.is-audio {
   height: 0;
   overflow: hidden;
+}
+
+.video-wrap.is-audio video {
+  display: none;
 }
 
 .media-row {
