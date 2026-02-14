@@ -792,9 +792,9 @@
   }
 
   /* boot */
-  window.addEventListener("DOMContentLoaded", () => {
+ window.addEventListener("DOMContentLoaded", async () => {
     showStorageConsent();
-    bootSongPage();
-    bootHome();
-  });
+    try { await bootSongPage(); } catch(e) { console.error("bootSongPage error:", e); }
+    try { await bootHome(); } catch(e) { console.error("bootHome error:", e); alert("Ошибка каталога: " + e.message); }
+});
 })();
