@@ -7,109 +7,87 @@
   <link rel="stylesheet" href="assets/styles.css" />
 </head>
 <body>
+  <div id="toast" class="toast"></div>
 
-<a href="./" class="logo-link">
-  <svg class="logo-svg" width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="22" cy="22" r="21" fill="#111118" stroke="url(#logoRim)" stroke-width="1"/>
-    <path d="M8 28 C12 14,20 10,22 10 C24 10,32 14,36 28" stroke="url(#auroraG)" stroke-width="1.2" fill="none" opacity="0.9"/>
-    <path d="M10 30 C14 18,19 14,22 14 C25 14,30 18,34 30" stroke="url(#auroraG)" stroke-width="0.8" fill="none" opacity="0.5"/>
-    <path d="M12 32 C15 22,19 18,22 18 C25 18,29 22,32 32" stroke="url(#auroraG)" stroke-width="0.6" fill="none" opacity="0.3"/>
-    <path d="M10 33 Q14 30,16 33 T22 33 T28 33 T34 33" stroke="#c084fc" stroke-width="1" fill="none" opacity="0.7"/>
-    <path d="M12 36 Q16 34,18 36 T24 36 T30 36" stroke="#22d3ee" stroke-width="0.6" fill="none" opacity="0.4"/>
-    <circle cx="22" cy="11" r="1.2" fill="#f0abfc" opacity="0.9"/>
-    <defs>
-      <linearGradient id="logoRim" x1="0" y1="0" x2="44" y2="44">
-        <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.4"/>
-        <stop offset="50%" stop-color="#22d3ee" stop-opacity="0.3"/>
-        <stop offset="100%" stop-color="#34d399" stop-opacity="0.4"/>
-      </linearGradient>
-      <linearGradient id="auroraG" x1="8" y1="28" x2="36" y2="10">
-        <stop offset="0%" stop-color="#7c3aed"/>
-        <stop offset="50%" stop-color="#22d3ee"/>
-        <stop offset="100%" stop-color="#34d399"/>
-      </linearGradient>
-    </defs>
-  </svg>
-  <span class="logo-text">
-    <span class="logo-name">LyricEar</span>
-    <span class="logo-sub">учим языки на слух</span>
-  </span>
-</a>
+  <!-- ═══ Header ═══ -->
+  <header class="song-header">
+    <h1 id="songTitle"></h1>
+    <p id="songArtist"></p>
+    <p><span id="songLang" class="pill"></span></p>
+    <p id="songHint" class="hint"></p>
+  </header>
 
-<div id="pageHeader">
-  <h1>🎵 <span id="songTitle">…</span> — <span id="songArtist">…</span></h1>
-  <p class="hint"><span id="songLang"></span> · <span id="songHint"></span></p>
-</div>
-
-<div id="jsNotRunning">
-  <div style="font-weight:800;margin-bottom:6px;">Скрипт не запустился</div>
-  <div style="opacity:.9">Попробуйте другой браузер или отключите блокировщики скриптов.</div>
-</div>
-
-<div class="layout">
-
-  <!-- ═══ A: Sticky dock ═══ -->
-  <div class="videoDock panel" id="videoDock">
-    <div class="dock-status">
-      <span class="lamp-wrap">
-        <span class="lamp-label">media</span>
-        <span id="mediaLamp" class="lamp lamp-off"></span>
-      </span>
-      <span class="pill">⏱ <span id="tNow" class="mono">0.00</span>s</span>
+  <!-- ═══ Player ═══ -->
+  <section class="panel player-panel">
+    <div class="media-bar">
+      <span class="mini">MEDIA</span>
+      <span class="lamp lamp-off" id="mediaLamp"></span>
+      <span class="mini mono" id="tNow">0.00s</span>
     </div>
-    <video id="player" controls preload="metadata" playsinline></video>
-  </div>
+    <video id="player" class="player is-audio" playsinline preload="auto"></video>
 
-  <!-- ═══ B: Контролы ═══ -->
-  <div class="panel playerControls" id="playerControls">
     <div class="media-row">
-      <button class="ghost" id="btnLoadLocal">📁 Выбрать файл</button>
+      <button class="ghost pulse" id="btnLoadLocal">📁 Выбрать файл</button>
       <input type="file" id="mediaPick" accept="audio/*,video/*" style="display:none" />
       <button class="primary" id="btnLoadYaDisk">☁️ Яндекс.Диск</button>
-      <button class="bad tiny" id="btnForgetMedia" style="display:none">🗑 Забыть файл</button>
+      <button class="bad tiny" id="btnForgetMedia" style="display:none">🗑 Забыть</button>
       <span class="mini mono" id="mediaName" style="display:none"></span>
     </div>
+  </section>
 
-    <div id="segStatus"></div>
-    <div class="topbar">
-      <button class="warn" id="btnPlaySeg" disabled>▶ Фрагмент</button>
+  <!-- ═══ Spectrogram ═══ -->
+  <section class="panel spec-panel">
+    <div class="spec-toolbar">
+      <button class="ghost" id="spectrogramToggle">📊 Спектрограмма ▾</button>
+      <button class="ghost spec-zoom-btn" id="specZoomOut">−</button>
+      <span class="mini mono" id="specZoomLabel">×1</span>
+      <button class="ghost spec-zoom-btn" id="specZoomIn">+</button>
+    </div>
+    <div id="spectrogramWrap" class="spec-wrap">
+      <canvas id="spectrogramCanvas"></canvas>
+    </div>
+  </section>
+
+  <!-- ═══ Segment controls ═══ -->
+  <section class="panel">
+    <div id="segStatus" class="seg-status"></div>
+
+    <div class="seg-buttons">
+      <button class="primary" id="btnPlaySeg" disabled>▶ Фрагмент</button>
       <button class="ghost" id="btnStart" disabled>⏱ Start</button>
       <button class="ghost" id="btnEnd" disabled>⏱ End</button>
+    </div>
+    <div class="seg-buttons" style="margin-top:6px;">
       <button class="bad" id="btnClear" disabled>✕ Сброс</button>
     </div>
-    <div class="topbar">
-      <label style="font-size:13px;cursor:pointer;user-select:none;">
-        <input type="checkbox" id="loopToggle" /> 🔁 Зациклить
-      </label>
-      <label style="font-size:13px;cursor:pointer;user-select:none;">
-        <input type="checkbox" id="autoNextToggle" /> ⏭ Авто
-      </label>
+
+    <div class="toggle-row">
+      <label><input type="checkbox" id="loopToggle" /> 🔁 Зациклить</label>
+      <label><input type="checkbox" id="autoNextToggle" /> ⏭ Авто</label>
     </div>
 
-    <div class="sep"></div>
-    <div class="toggleRow">
-      <label><input type="checkbox" id="globalShowOrig" /> 👁 Оригинал</label>
+    <div class="toggle-row">
+      <label><input type="checkbox" id="globalShowOrig" /> 🔍 Оригинал</label>
       <label><input type="checkbox" id="globalShowPhon" /> 👂 Автор</label>
+    </div>
+    <div class="toggle-row">
       <label><input type="checkbox" id="globalShowTrans" /> 💬 Переводы</label>
       <label><input type="checkbox" id="globalShowWhy" /> 🧠 Почему</label>
     </div>
+  </section>
 
-    <div class="save-indicator" id="saveIndicator">💾 Прогресс сохраняется автоматически</div>
-  </div>
+  <!-- ═══ Lines ═══ -->
+  <section id="lines" class="lines"></section>
 
-  <!-- ═══ C: Фразы ═══ -->
-  <div class="panel" id="phrasesPanel">
-    <div id="lines"></div>
-  </div>
+  <!-- ═══ Footer ═══ -->
+  <footer class="page-footer">
+    <div class="save-indicator" id="saveIndicator">💾</div>
+    <button class="bad tiny" id="btnResetProgress">Сбросить прогресс</button>
+    <p class="mini muted" style="margin-top:12px;">
+      <a href="index.html">← Каталог</a>
+    </p>
+  </footer>
 
-</div>
-
-<div class="page-footer">
-  <button class="link-btn" id="btnResetProgress">Сбросить прогресс</button>
-</div>
-
-<div id="toast"></div>
-<script>try{document.documentElement.classList.add('js');}catch{}</script>
-<script src="assets/app.js"></script>
+  <script src="assets/app.js"></script>
 </body>
 </html>
