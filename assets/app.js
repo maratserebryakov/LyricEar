@@ -31,6 +31,78 @@
     return r.json();
   }
 
+  /* ══════════════════════════════════════
+     IndexedDB — media blob cache
+     ══════════════════════════════════════ */
+  const IDB_NAME = "lyricear-media";
+  const IDB_STORE = "files";
+  const IDB_VERSION = 1;
+
+  function idbOpen() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) {
+          db.createObjectStore(IDB_STORE);
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbSave(songId, blob, fileName, mimeType) {
+    try {
+      const db = await idbOpen();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readwrite");
+        const store = tx.objectStore(IDB_STORE);
+        store.put(
+          { blob, name: fileName, type: mimeType, savedAt: Date.now() },
+          songId
+        );
+        tx.oncomplete = () => { db.close(); resolve(true); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+      });
+    } catch (e) {
+      console.warn("[IDB] save failed:", e);
+      return false;
+    }
+  }
+
+  async function idbLoad(songId) {
+    try {
+      const db = await idbOpen();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readonly");
+        const store = tx.objectStore(IDB_STORE);
+        const req = store.get(songId);
+        req.onsuccess = () => { db.close(); resolve(req.result || null); };
+        req.onerror = () => { db.close(); reject(req.error); };
+      });
+    } catch (e) {
+      console.warn("[IDB] load failed:", e);
+      return null;
+    }
+  }
+
+  async function idbDelete(songId) {
+    try {
+      const db = await idbOpen();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readwrite");
+        const store = tx.objectStore(IDB_STORE);
+        store.delete(songId);
+        tx.oncomplete = () => { db.close(); resolve(true); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+      });
+    } catch (e) {
+      console.warn("[IDB] delete failed:", e);
+      return false;
+    }
+  }
+
   /* ── storage consent ── */
   function showStorageConsent() {
     const KEY = "lyricear_storage_ok";
@@ -38,7 +110,7 @@
     const bar = document.createElement("div");
     bar.id = "storageBanner";
     bar.innerHTML =
-      `<span>Этот сайт сохраняет ваш прогресс в браузере (localStorage). Никакие данные не передаются на сервер.</span>
+      `<span>Этот сайт сохраняет ваш прогресс и медиафайлы в браузере (localStorage + IndexedDB). Никакие данные не передаются на сервер.</span>
        <button id="storageOk">Понятно</button>`;
     document.body.appendChild(bar);
     $("#storageOk").addEventListener("click", () => {
@@ -84,22 +156,16 @@
 
   /* ── resolve song from URL ── */
   function getSongSlug() {
-    // New: ?song=store-hav
     const params = new URLSearchParams(location.search);
     const slug = params.get("song");
     if (slug) return slug;
-
-    // Legacy: data-song-json on <html>
     const attr = document.documentElement.dataset.songJson;
     if (attr) return attr;
-
     return null;
   }
 
   function songSlugToJsonUrl(slug) {
-    // Legacy full path
     if (slug.includes("/")) return slug;
-    // New convention
     return `data/songs/${slug}.json`;
   }
 
@@ -127,7 +193,8 @@
     }
     normalizeState(state);
 
-    // Dynamic page title
+    const songId = state.song?.id || slug;
+
     if (state.song?.title) {
       document.title = `${state.song.title} — LyricEar`;
     }
@@ -137,6 +204,8 @@
     const mediaPick      = $("#mediaPick");
     const btnLoadLocal   = $("#btnLoadLocal");
     const btnLoadYaDisk  = $("#btnLoadYaDisk");
+    const btnForgetMedia = $("#btnForgetMedia");
+    const mediaName      = $("#mediaName");
     const lamp           = $("#mediaLamp");
     const elNow          = $("#tNow");
     const btnPlaySeg     = $("#btnPlaySeg");
@@ -168,14 +237,32 @@
     function setLamp(source) {
       if (!lamp) return;
       lamp.className = "lamp";
-      if      (source === "local")  { lamp.classList.add("lamp-green"); lamp.title = "Локальный файл"; }
+      if      (source === "local")  { lamp.classList.add("lamp-green"); lamp.title = "Файл из кэша браузера"; }
+      else if (source === "cached") { lamp.classList.add("lamp-green"); lamp.title = "Файл из кэша (IndexedDB)"; }
       else if (source === "remote") { lamp.classList.add("lamp-red");   lamp.title = "Файл из интернета"; }
       else                          { lamp.classList.add("lamp-off");   lamp.title = "Медиа не загружено"; }
     }
     setLamp("none");
 
-    function setSrc(src, source) {
-      player.src = src;
+    /* ── media name display ── */
+    function showMediaName(name) {
+      if (mediaName) {
+        mediaName.textContent = name || "";
+        mediaName.style.display = name ? "inline" : "none";
+      }
+    }
+    showMediaName("");
+
+    /* ── forget media button ── */
+    function updateForgetBtn(visible) {
+      if (btnForgetMedia) {
+        btnForgetMedia.style.display = visible ? "inline-block" : "none";
+      }
+    }
+    updateForgetBtn(false);
+
+    function setSrc(url, source) {
+      player.src = url;
       player.load();
       setLamp(source);
     }
@@ -211,13 +298,51 @@
       if (mode === "video") {
         player.classList.remove("is-audio");
         player.classList.add("is-video");
-        player.removeAttribute("poster");
       } else {
         player.classList.remove("is-video");
         player.classList.add("is-audio");
       }
     }
     applyPlayerMode("audio");
+
+    /* ── load blob into player + save to IDB ── */
+    async function loadBlob(blob, fileName, mimeType, source, persist) {
+      if (player._objUrl) {
+        try { URL.revokeObjectURL(player._objUrl); } catch {}
+      }
+      const url = URL.createObjectURL(blob);
+      player._objUrl = url;
+      const mode = detectMediaType(fileName, mimeType);
+      applyPlayerMode(mode);
+      setSrc(url, source);
+      showMediaName(fileName);
+      updateForgetBtn(true);
+      stopPulse();
+
+      if (persist) {
+        const ok = await idbSave(songId, blob, fileName, mimeType);
+        if (ok) {
+          toast(
+            mode === "video" ? "🎬 Видео сохранено" : "🎵 Аудио сохранено",
+            fileName + " — при следующем открытии подхватится автоматически"
+          );
+        } else {
+          toast(
+            mode === "video" ? "🎬 Открыто видео" : "🎵 Открыто аудио",
+            fileName + " (не удалось кэшировать)"
+          );
+        }
+      }
+    }
+
+    /* ── try restore from IDB on boot ── */
+    async function tryRestoreMedia() {
+      const cached = await idbLoad(songId);
+      if (!cached || !cached.blob) return false;
+      await loadBlob(cached.blob, cached.name, cached.type, "cached", false);
+      toast("📦 Медиа восстановлено из кэша", cached.name);
+      return true;
+    }
 
     /* ── pulse ── */
     function stopPulse()  { if (btnLoadLocal) btnLoadLocal.classList.remove("pulse"); }
@@ -229,13 +354,26 @@
       mediaPick.addEventListener("change", () => {
         const f = mediaPick.files?.[0];
         if (!f) return;
-        if (player._objUrl) { try { URL.revokeObjectURL(player._objUrl); } catch {} }
-        const url = URL.createObjectURL(f);
-        player._objUrl = url;
-        const mode = detectMediaType(f.name, f.type);
-        applyPlayerMode(mode);
-        setSrc(url, "local");
-        toast(mode === "video" ? "🎬 Открыто видео" : "🎵 Открыто аудио", f.name);
+        loadBlob(f, f.name, f.type, "local", true);
+      });
+    }
+
+    /* ── forget media ── */
+    if (btnForgetMedia) {
+      btnForgetMedia.addEventListener("click", async () => {
+        if (!confirm("Удалить сохранённый медиафайл из кэша браузера?")) return;
+        await idbDelete(songId);
+        if (player._objUrl) {
+          try { URL.revokeObjectURL(player._objUrl); } catch {}
+          player._objUrl = null;
+        }
+        player.removeAttribute("src");
+        player.load();
+        applyPlayerMode("audio");
+        setLamp("none");
+        showMediaName("");
+        updateForgetBtn(false);
+        toast("🗑 Медиа удалено из кэша");
       });
     }
 
@@ -519,6 +657,11 @@
     /* ── start ── */
     renderLines();
     setActive(0, false);
+
+    /* ── restore cached media ── */
+    tryRestoreMedia().then(restored => {
+      if (!restored) startPulse();
+    });
 
     /* ── keyboard shortcuts ── */
     document.addEventListener("keydown", (e) => {
