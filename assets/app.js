@@ -1,7 +1,6 @@
 ;(function () {
   /* ── helpers ── */
   const $ = (s, r = document) => r.querySelector(s);
-  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
   function esc(s) {
     return String(s)
@@ -24,21 +23,6 @@
   function clamp01(x) {
     x = Number(x);
     return Number.isFinite(x) ? Math.max(0, Math.min(1, x)) : 0;
-  }
-
-  function safeParseJson(raw) {
-    let t = String(raw).replace(/^\uFEFF/, "").trim();
-    t = t.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
-    const fo = t.indexOf("{"), fa = t.indexOf("[");
-    let start = -1;
-    if (fo !== -1 && fa !== -1) start = Math.min(fo, fa);
-    else start = fo !== -1 ? fo : fa;
-    if (start > 0) t = t.slice(start);
-    const lo = t.lastIndexOf("}"), la = t.lastIndexOf("]");
-    const end = Math.max(lo + 1, la + 1);
-    if (end > 0) t = t.slice(0, end).trim();
-    try { return { ok: true, value: JSON.parse(t) }; }
-    catch (e) { return { ok: false, error: String(e.message || e) }; }
   }
 
   async function fetchJson(url) {
@@ -90,28 +74,49 @@
     (out.items || []).forEach(it => {
       const l = m.get(it.id);
       if (!l) return;
-      it.start = l.start ?? it.start ?? null;
-      it.end = l.end ?? it.end ?? null;
+      it.start  = l.start ?? it.start ?? null;
+      it.end    = l.end   ?? it.end   ?? null;
       it.learned = typeof l.learned === "boolean" ? l.learned : it.learned;
       if (l.phonetic_user) it.phonetic_user = l.phonetic_user;
     });
     return out;
   }
 
+  /* ── resolve song from URL ── */
+  function getSongSlug() {
+    // New: ?song=store-hav
+    const params = new URLSearchParams(location.search);
+    const slug = params.get("song");
+    if (slug) return slug;
+
+    // Legacy: data-song-json on <html>
+    const attr = document.documentElement.dataset.songJson;
+    if (attr) return attr;
+
+    return null;
+  }
+
+  function songSlugToJsonUrl(slug) {
+    // Legacy full path
+    if (slug.includes("/")) return slug;
+    // New convention
+    return `data/songs/${slug}.json`;
+  }
+
   /* ══════════════════════════════════════
      SONG PAGE
      ══════════════════════════════════════ */
   async function bootSongPage() {
-    const root = document.documentElement;
-    if (!root.dataset.songJson) return;
+    const slug = getSongSlug();
+    if (!slug) return;
 
-    const SONG_JSON_URL = root.dataset.songJson;
+    const SONG_JSON_URL = songSlugToJsonUrl(slug);
     const PREFIX = "lyricear_v1::";
 
     let state;
     try {
       const remote = await fetchJson(SONG_JSON_URL);
-      const key = PREFIX + (remote.song?.id || SONG_JSON_URL);
+      const key = PREFIX + (remote.song?.id || slug);
       const localRaw = localStorage.getItem(key);
       const local = localRaw ? JSON.parse(localRaw) : null;
       state = local ? mergeProgress(remote, local) : remote;
@@ -121,6 +126,11 @@
       return;
     }
     normalizeState(state);
+
+    // Dynamic page title
+    if (state.song?.title) {
+      document.title = `${state.song.title} — LyricEar`;
+    }
 
     /* ── DOM refs ── */
     const player         = $("#player");
@@ -135,16 +145,12 @@
     const btnClear       = $("#btnClear");
     const loopToggle     = $("#loopToggle");
     const autoNextToggle = $("#autoNextToggle");
-    const jsonBox        = $("#jsonBox");
-    const btnExport      = $("#btnExport");
-    const btnImport      = $("#btnImport");
-    const btnReset       = $("#btnReset");
-    const filePick       = $("#filePick");
     const globalShowOrig  = $("#globalShowOrig");
     const globalShowTrans = $("#globalShowTrans");
     const globalShowPhon  = $("#globalShowPhon");
     const globalShowWhy   = $("#globalShowWhy");
     const linesHost      = $("#lines");
+    const saveIndicator  = $("#saveIndicator");
 
     let activeIndex = 0;
     let loopTimer = null;
@@ -162,7 +168,7 @@
     function setLamp(source) {
       if (!lamp) return;
       lamp.className = "lamp";
-      if (source === "local")       { lamp.classList.add("lamp-green"); lamp.title = "Локальный файл"; }
+      if      (source === "local")  { lamp.classList.add("lamp-green"); lamp.title = "Локальный файл"; }
       else if (source === "remote") { lamp.classList.add("lamp-red");   lamp.title = "Файл из интернета"; }
       else                          { lamp.classList.add("lamp-off");   lamp.title = "Медиа не загружено"; }
     }
@@ -174,12 +180,16 @@
       setLamp(source);
     }
 
-    /* ── save ── */
+    /* ── save with flash ── */
     let saveTimer = null;
     function save() {
       clearTimeout(saveTimer);
       saveTimer = setTimeout(() => {
         try { localStorage.setItem(state._storageKey, JSON.stringify(state)); } catch {}
+        if (saveIndicator) {
+          saveIndicator.classList.add("flash");
+          setTimeout(() => saveIndicator.classList.remove("flash"), 600);
+        }
       }, 300);
     }
 
@@ -207,33 +217,28 @@
         player.classList.add("is-audio");
       }
     }
-
     applyPlayerMode("audio");
 
-    /* ── FIX pulse: убирать пульс только при реальной загрузке медиа ── */
-    function stopPulse() {
-      if (btnLoadLocal) btnLoadLocal.classList.remove("pulse");
-    }
-    function startPulse() {
-      if (btnLoadLocal) btnLoadLocal.classList.add("pulse");
-    }
+    /* ── pulse ── */
+    function stopPulse()  { if (btnLoadLocal) btnLoadLocal.classList.remove("pulse"); }
+    function startPulse() { if (btnLoadLocal) btnLoadLocal.classList.add("pulse"); }
 
     /* ── local file ── */
-    if (btnLoadLocal) btnLoadLocal.addEventListener("click", () => mediaPick.click());
-    mediaPick.addEventListener("change", () => {
-      const f = mediaPick.files?.[0];
-      if (!f) return;
-      if (player._objUrl) { try { URL.revokeObjectURL(player._objUrl); } catch {} }
-      const url = URL.createObjectURL(f);
-      player._objUrl = url;
-      const mode = detectMediaType(f.name, f.type);
-      applyPlayerMode(mode);
-      setSrc(url, "local");
-      toast(mode === "video" ? "🎬 Открыто видео" : "🎵 Открыто аудио", f.name);
-      /* FIX pulse: НЕ снимаем тут — ждём loadeddata */
-    });
+    if (btnLoadLocal && mediaPick) {
+      btnLoadLocal.addEventListener("click", () => mediaPick.click());
+      mediaPick.addEventListener("change", () => {
+        const f = mediaPick.files?.[0];
+        if (!f) return;
+        if (player._objUrl) { try { URL.revokeObjectURL(player._objUrl); } catch {} }
+        const url = URL.createObjectURL(f);
+        player._objUrl = url;
+        const mode = detectMediaType(f.name, f.type);
+        applyPlayerMode(mode);
+        setSrc(url, "local");
+        toast(mode === "video" ? "🎬 Открыто видео" : "🎵 Открыто аудио", f.name);
+      });
+    }
 
-    /* FIX pulse: снимаем пульс только когда медиа реально загрузилось */
     player.addEventListener("loadeddata", () => {
       stopPulse();
       if (player.videoHeight > 0) applyPlayerMode("video");
@@ -247,7 +252,6 @@
       } else {
         btnLoadYaDisk.addEventListener("click", () => {
           window.open(yadiskUrl, "yadisk", "width=700,height=500,left=300,top=100");
-          /* FIX pulse: начинаем мигать */
           startPulse();
           toast("📥 Скачайте файл с Яндекс.Диска", "Затем нажмите мигающую кнопку «📁 Выбрать файл»");
         });
@@ -256,11 +260,11 @@
 
     /* ── player events ── */
     player.addEventListener("timeupdate", () => {
-      elNow.textContent = (player.currentTime || 0).toFixed(2);
+      if (elNow) elNow.textContent = (player.currentTime || 0).toFixed(2);
     });
     player.addEventListener("loadedmetadata", () => {
-      btnStart.disabled = false;
-      btnEnd.disabled = false;
+      if (btnStart) btnStart.disabled = false;
+      if (btnEnd)   btnEnd.disabled   = false;
       renderSegStatus();
     });
     player.addEventListener("error", () => {
@@ -271,18 +275,20 @@
 
     /* ── segment controls ── */
     function renderSegStatus() {
+      const segEl = $("#segStatus");
+      if (!segEl) return;
       const it = state.items[activeIndex];
       const s = it?.start, e = it?.end;
-      $("#segStatus").innerHTML =
+      segEl.innerHTML =
         `<span class="pill">Строка: <span class="mono">${activeIndex + 1}/${state.items.length}</span></span>
          <span class="pill">Start: <span class="mono">${s == null ? "—" : Number(s).toFixed(2)}</span></span>
          <span class="pill">End: <span class="mono">${e == null ? "—" : Number(e).toFixed(2)}</span></span>
          <span class="pill">${it?.learned ? "✓ выучено" : "… в работе"}</span>`;
       const ready = s != null && e != null && Number(e) > Number(s);
-      btnPlaySeg.disabled = !ready;
-      btnClear.disabled = !(s != null || e != null);
-      btnStart.disabled = !(player?.readyState >= 1);
-      btnEnd.disabled = !(player?.readyState >= 1);
+      if (btnPlaySeg) btnPlaySeg.disabled = !ready;
+      if (btnClear)   btnClear.disabled   = !(s != null || e != null);
+      if (btnStart)   btnStart.disabled   = !(player?.readyState >= 1);
+      if (btnEnd)     btnEnd.disabled     = !(player?.readyState >= 1);
     }
 
     function stopLoop() {
@@ -301,12 +307,12 @@
       loopTimer = setInterval(() => {
         if (!player || player.paused) return;
         if (player.currentTime >= Number(e) - 0.03) {
-          if (loopToggle.checked) {
+          if (loopToggle && loopToggle.checked) {
             player.currentTime = Number(s);
           } else {
             stopLoop();
             player.pause();
-            if (autoNextToggle.checked) {
+            if (autoNextToggle && autoNextToggle.checked) {
               const next = Math.min(activeIndex + 1, state.items.length - 1);
               if (next !== activeIndex) {
                 setActive(next, true);
@@ -320,16 +326,16 @@
       }, 30);
     }
 
-    btnPlaySeg.addEventListener("click", playSegment);
+    if (btnPlaySeg) btnPlaySeg.addEventListener("click", playSegment);
 
-    btnStart.addEventListener("click", () => {
+    if (btnStart) btnStart.addEventListener("click", () => {
       const it = state.items[activeIndex];
       it.start = Number(player.currentTime.toFixed(2));
       if (it.end != null && Number(it.end) <= Number(it.start)) it.end = null;
       save(); renderLines();
     });
 
-    btnEnd.addEventListener("click", () => {
+    if (btnEnd) btnEnd.addEventListener("click", () => {
       const it = state.items[activeIndex];
       it.end = Number(player.currentTime.toFixed(2));
       if (it.start != null && Number(it.end) <= Number(it.start)) {
@@ -338,7 +344,7 @@
       save(); renderLines();
     });
 
-    btnClear.addEventListener("click", () => {
+    if (btnClear) btnClear.addEventListener("click", () => {
       const it = state.items[activeIndex];
       it.start = null; it.end = null;
       save(); renderLines();
@@ -479,52 +485,26 @@
       save();
     }
 
-    /* ── JSON tools ── */
-    jsonBox.value = JSON.stringify(state, null, 2);
-
-    btnExport.addEventListener("click", async () => {
-      const out = structuredClone(state);
-      delete out._storageKey;
-      const txt = JSON.stringify(out, null, 2);
-      jsonBox.value = txt;
-      try { await navigator.clipboard.writeText(txt); toast("Экспортировано", "JSON в буфере обмена"); }
-      catch { toast("Экспортировано", "Скопируйте из поля вручную"); }
-    });
-
-    btnImport.addEventListener("click", () => {
-      const p = safeParseJson(jsonBox.value);
-      if (!p.ok) { toast("Не получилось разобрать JSON", p.error); return; }
-      const key = state._storageKey;
-      state = p.value; state._storageKey = key;
-      normalizeState(state); save(); applyHeader();
-      setActive(0, false);
-      jsonBox.value = JSON.stringify(state, null, 2);
-      toast("Импорт применён");
-    });
-
-    filePick.addEventListener("change", async () => {
-      const f = filePick.files?.[0]; if (!f) return;
-      const txt = await f.text(); jsonBox.value = txt;
-      const p = safeParseJson(txt);
-      if (!p.ok) { toast("JSON не распознан", p.error); return; }
-      const key = state._storageKey;
-      state = p.value; state._storageKey = key;
-      normalizeState(state); save(); applyHeader();
-      setActive(0, false);
-      toast("JSON загружен", f.name);
-    });
-
-    btnReset.addEventListener("click", async () => {
-      if (!confirm("Сбросить все изменения к исходным данным?")) return;
-      try {
-        const remote = await fetchJson(SONG_JSON_URL);
-        const key = state._storageKey;
-        state = remote; state._storageKey = key;
-        normalizeState(state); save(); applyHeader();
-        setActive(0, false);
-        toast("Сброшено к шаблону");
-      } catch (e) { toast("Не удалось сбросить", String(e)); }
-    });
+    /* ── reset progress ── */
+    const btnResetProgress = $("#btnResetProgress");
+    if (btnResetProgress) {
+      btnResetProgress.addEventListener("click", async () => {
+        if (!confirm("Сбросить весь прогресс по этой песне? Это нельзя отменить.")) return;
+        try {
+          const remote = await fetchJson(SONG_JSON_URL);
+          const key = state._storageKey;
+          state = remote;
+          state._storageKey = key;
+          normalizeState(state);
+          save();
+          applyHeader();
+          setActive(0, false);
+          toast("✅ Прогресс сброшен");
+        } catch (e) {
+          toast("Не удалось сбросить", String(e));
+        }
+      });
+    }
 
     /* ── global toggles ── */
     if (globalShowOrig)  globalShowOrig.checked  = !!state.ui.showOriginalByDefault;
@@ -551,11 +531,13 @@
         if (player.paused) player.play().catch(() => {}); else player.pause();
       }
       if (key === "s") {
-        e.preventDefault(); btnStart.click();
+        e.preventDefault();
+        if (btnStart) btnStart.click();
         toast("⏱ Start = " + player.currentTime.toFixed(2));
       }
       if (key === "e") {
-        e.preventDefault(); btnEnd.click();
+        e.preventDefault();
+        if (btnEnd) btnEnd.click();
         const next = Math.min(activeIndex + 1, state.items.length - 1);
         if (next !== activeIndex) setTimeout(() => setActive(next, false), 100);
         toast("⏱ End = " + player.currentTime.toFixed(2) + " → строка " + (next + 1));
@@ -569,7 +551,7 @@
       if (key === "r") { e.preventDefault(); playSegment(); }
     });
 
-    toast("⌨ Горячие клавиши: S=Start, E=End, Space=Play, ↑↓=строки, R=фрагмент");
+    toast("⌨ S=Start, E=End, Space=Play, ↑↓=строки, R=фрагмент");
   }
 
   /* ══════════════════════════════════════
@@ -590,18 +572,22 @@
     const songs = catalog.songs || [];
     const langs = catalog.languages || [];
 
-    langSel.innerHTML = `<option value="">Все языки</option>` +
-      langs.map(l => `<option value="${esc(l.code)}">${esc(l.name)}</option>`).join("");
+    if (langSel) {
+      langSel.innerHTML = `<option value="">Все языки</option>` +
+        langs.map(l => `<option value="${esc(l.code)}">${esc(l.name)}</option>`).join("");
+    }
 
     function render() {
-      const q = (search.value || "").trim().toLowerCase();
-      const lang = langSel.value || "";
+      const q = (search?.value || "").trim().toLowerCase();
+      const lang = langSel?.value || "";
       const filtered = songs.filter(s => {
         const okLang = !lang || s.language === lang;
         const hay = `${s.title} ${s.artist} ${s.languageName || ""}`.toLowerCase();
         return okLang && (!q || hay.includes(q));
       });
-      $("#count").textContent = String(filtered.length);
+      const countEl = $("#count");
+      if (countEl) countEl.textContent = String(filtered.length);
+      if (!list) return;
       list.innerHTML = "";
       filtered.forEach(s => {
         const a = document.createElement("a");
@@ -617,8 +603,8 @@
       });
     }
 
-    langSel.addEventListener("change", render);
-    search.addEventListener("input", render);
+    if (langSel) langSel.addEventListener("change", render);
+    if (search) search.addEventListener("input", render);
     render();
   }
 
