@@ -26,13 +26,21 @@
     </div>
     <video id="player" class="player is-audio" playsinline preload="auto"></video>
 
-    <div class="media-row">
-      <button class="ghost pulse" id="btnLoadLocal">📁 Выбрать файл</button>
-      <input type="file" id="mediaPick" accept="audio/*,video/*" style="display:none" />
-      <button class="primary" id="btnLoadYaDisk">☁️ Яндекс.Диск</button>
-      <button class="bad tiny" id="btnForgetMedia" style="display:none">🗑 Забыть</button>
-      <span class="mini mono" id="mediaName" style="display:none"></span>
-    </div>
+                <div class="media-row">
+              <button class="ghost pulse" id="btnLoadLocal">📁 Выбрать файл</button>
+              <input type="file" id="mediaPick" accept="audio/*,video/*" hidden>
+              <button class="primary" id="btnLoadYaDisk">☁ Яндекс.Диск</button>
+              <button class="bad tiny" id="btnForgetMedia" style="display:none">🗑 Забыть</button>
+              <span class="mini mono" id="mediaName"></span>
+            </div>
+
+            <video id="player" playsinline preload="auto"></video>
+
+            <div class="play-row">
+              <button id="btnPlay">▶</button>
+              <input type="range" id="playProgress" min="0" max="1000" value="0">
+              <span id="playTime">0:00 / 0:00</span>
+            </div>
   </section>
 
   <!-- ═══ Spectrogram ═══ -->
