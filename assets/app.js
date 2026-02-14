@@ -93,22 +93,23 @@
   /* ══════════════════════════════════════
      Spectrogram Engine
      ══════════════════════════════════════ */
-  function createSpectrogram(canvas, playerEl) {
+    function createSpectrogram(canvas, playerEl) {
     const ctx = canvas.getContext("2d");
-    let audioCtx = null, analyser = null, source = null;
+    let audioCtx = null, analyser = null, source = null, gainNode = null;
     let connected = false, rafId = null, running = false;
 
-    // ── LUT: чёрный → фиолетовый → розовый → голубой → лазурный → белый ──
+    // ── LUT: чёрный → фиолет → розовый → голубой → лазурный ──
     const STOPS = [
-      [0.00,   8,   4,  16],   // почти чёрный
-      [0.12,  30,  10,  60],   // тёмно-фиолетовый
-      [0.25,  75,  20, 130],   // фиолетовый
-      [0.40, 140,  30, 160],   // пурпурный
-      [0.55, 200,  50, 180],   // розовый
-      [0.70, 180,  80, 230],   // светло-фиолетовый
-      [0.80,  80, 160, 240],   // голубой
-      [0.90,  40, 220, 255],   // лазурный
-      [1.00, 200, 250, 255]    // яркий лазурный-белый
+      [0.00,   6,   2,  14],
+      [0.08,  20,   8,  50],
+      [0.18,  55,  15, 110],
+      [0.30, 100,  25, 160],
+      [0.42, 160,  35, 180],
+      [0.55, 210,  55, 190],
+      [0.68, 190,  90, 235],
+      [0.80, 100, 170, 245],
+      [0.90,  50, 225, 255],
+      [1.00, 220, 252, 255]
     ];
     const LUT = new Array(256);
     for (let i = 0; i < 256; i++) {
@@ -127,18 +128,18 @@
     }
 
     let zoom = 1, writeX = 0, freqData = null;
+    let sensitivity = 2.0;  // boost factor for quiet signals
 
-       /* ── frequency zone labels ── */
     const FREQ_ZONES = [
-      { freq: 300,  label: "300 Hz",  desc: "гласные · бас",   color: "rgba(40,220,255,0.8)" },   // лазурный
-      { freq: 3000, label: "3 kHz",   desc: "согласные · речь", color: "rgba(200,50,180,0.8)" },   // розовый
-      { freq: 6000, label: "6 kHz",   desc: "шипящие · s t k",  color: "rgba(140,80,230,0.7)" },   // фиолетовый
+      { freq: 300,  label: "300 Hz",  desc: "гласные · бас",    color: "rgba(40,220,255,0.85)" },
+      { freq: 3000, label: "3 kHz",   desc: "согласные · речь",  color: "rgba(210,55,190,0.85)" },
+      { freq: 6000, label: "6 kHz",   desc: "шипящие · s t k",   color: "rgba(150,90,235,0.75)" },
     ];
 
     const ZONE_BANDS = [
-      { from: 0,    to: 300,   bg: "rgba(40,220,255,0.05)" },   // лазурный
-      { from: 300,  to: 3000,  bg: "rgba(200,50,180,0.05)" },   // розовый
-      { from: 3000, to: 24000, bg: "rgba(140,80,230,0.04)" },   // фиолетовый
+      { from: 0,    to: 300,   bg: "rgba(40,220,255,0.07)" },
+      { from: 300,  to: 3000,  bg: "rgba(210,55,190,0.06)" },
+      { from: 3000, to: 24000, bg: "rgba(150,90,235,0.05)" },
     ];
 
     function getMaxFreq() {
@@ -163,14 +164,12 @@
         const yTop    = freqToY(Math.min(band.to, maxFreq), H);
         const yBottom = freqToY(band.from, H);
         if (yTop < 0 && yBottom < 0) return;
-        const y1 = Math.max(0, yTop);
-        const y2 = Math.min(H, yBottom);
         ctx.fillStyle = band.bg;
-        ctx.fillRect(0, y1, W, y2 - y1);
+        ctx.fillRect(0, Math.max(0, yTop), W, Math.min(H, yBottom) - Math.max(0, yTop));
       });
 
       const fontSize = Math.round(10 * dpr);
-      ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+      ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
       ctx.textBaseline = "bottom";
 
       FREQ_ZONES.forEach(zone => {
@@ -179,22 +178,27 @@
         if (y < 0 || y > H) return;
 
         ctx.strokeStyle = zone.color;
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4 * dpr, 3 * dpr]);
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6 * dpr, 4 * dpr]);
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(W, y);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        const text = `${zone.label} ${zone.desc}`;
+        const text = `${zone.label}  ${zone.desc}`;
         const tw = ctx.measureText(text).width;
-        const pad = 3 * dpr;
-        ctx.fillStyle = "rgba(0,0,0,0.55)";
-        ctx.fillRect(2 * dpr, y - fontSize - pad, tw + pad * 2, fontSize + pad);
+        const pad = 4 * dpr;
+        const boxH = fontSize + pad * 2;
+        const boxY = y - boxH - 2 * dpr;
+
+        ctx.fillStyle = "rgba(0,0,0,0.7)";
+        ctx.beginPath();
+        ctx.roundRect(2 * dpr, boxY, tw + pad * 2, boxH, 3 * dpr);
+        ctx.fill();
 
         ctx.fillStyle = zone.color;
-        ctx.fillText(text, 2 * dpr + pad, y - 2 * dpr);
+        ctx.fillText(text, 2 * dpr + pad, y - 4 * dpr);
       });
     }
 
@@ -204,12 +208,18 @@
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = 2048;
-        analyser.smoothingTimeConstant = 0.3;
-        analyser.minDecibels = -100;
-        analyser.maxDecibels = -20;
+        analyser.smoothingTimeConstant = 0.25;
+        analyser.minDecibels = -90;
+        analyser.maxDecibels = -10;
+
+        gainNode = audioCtx.createGain();
+        gainNode.gain.value = 1.0;
+
         source = audioCtx.createMediaElementSource(playerEl);
-        source.connect(analyser);
+        source.connect(gainNode);
+        gainNode.connect(analyser);
         analyser.connect(audioCtx.destination);
+
         freqData = new Uint8Array(analyser.frequencyBinCount);
         connected = true;
         return true;
@@ -232,19 +242,24 @@
     function drawColumn() {
       if (!analyser || !freqData) return;
       analyser.getByteFrequencyData(freqData);
+
       const W = canvas.width, H = canvas.height;
       if (writeX >= W) {
         const img = ctx.getImageData(1, 0, W - 1, H);
         ctx.putImageData(img, 0, 0);
         writeX = W - 1;
       }
+
       const totalBins = analyser.frequencyBinCount;
       const visBins   = Math.floor(totalBins / zoom);
       const col = ctx.createImageData(1, H);
       const d   = col.data;
+
       for (let y = 0; y < H; y++) {
         const bin = Math.floor((1 - y / H) * visBins);
-        const val = Math.max(0, Math.min(255, freqData[bin] || 0));
+        // boost quiet signals with sensitivity multiplier
+        let raw = (freqData[bin] || 0) * sensitivity;
+        const val = Math.max(0, Math.min(255, Math.round(raw)));
         const c   = LUT[val];
         const off = y * 4;
         d[off] = c[0]; d[off+1] = c[1]; d[off+2] = c[2]; d[off+3] = 255;
@@ -260,11 +275,10 @@
       if (!ensureAudio()) return;
       if (audioCtx.state === "suspended") audioCtx.resume();
       if (running) return;
-      running = true;
-      loop();
+      running = true; loop();
     }
-    function stop()  { running = false; if (rafId) { cancelAnimationFrame(rafId); rafId = null; } }
-    function clear() { resetCanvas(); }
+    function stop()    { running = false; if (rafId) { cancelAnimationFrame(rafId); rafId = null; } }
+    function clear()   { resetCanvas(); }
     function zoomIn()  { if (zoom < 4) { zoom *= 2; clear(); } }
     function zoomOut() { if (zoom > 1) { zoom /= 2; clear(); } }
     function getZoom() { return zoom; }
