@@ -464,6 +464,38 @@
     }
 
     /* player events */
+        /* ── custom play/pause button ── */
+    const btnPlay = $("#btnPlay");
+    const playProgress = $("#playProgress");
+    const playTime = $("#playTime");
+
+    function fmtTime(t) {
+      if (!Number.isFinite(t)) return "0:00";
+      const m = Math.floor(t / 60);
+      const s = Math.floor(t % 60);
+      return m + ":" + String(s).padStart(2, "0");
+    }
+
+    if (btnPlay) {
+      btnPlay.addEventListener("click", () => {
+        if (!player.src && !player.currentSrc) { toast("Сначала выберите файл"); return; }
+        if (player.paused) player.play().catch(() => {});
+        else player.pause();
+      });
+    }
+    player.addEventListener("play",  () => { if (btnPlay) btnPlay.textContent = "⏸"; });
+    player.addEventListener("pause", () => { if (btnPlay) btnPlay.textContent = "▶"; });
+    player.addEventListener("ended", () => { if (btnPlay) btnPlay.textContent = "▶"; });
+
+    if (playProgress) {
+      player.addEventListener("timeupdate", () => {
+        if (player.duration) playProgress.value = (player.currentTime / player.duration * 1000).toFixed(0);
+        if (playTime) playTime.textContent = fmtTime(player.currentTime) + " / " + fmtTime(player.duration);
+      });
+      playProgress.addEventListener("input", () => {
+        if (player.duration) player.currentTime = (playProgress.value / 1000) * player.duration;
+      });
+    }
     player.addEventListener("timeupdate", () => { if (elNow) elNow.textContent = (player.currentTime || 0).toFixed(2) + "s"; });
     player.addEventListener("loadedmetadata", () => { if (btnStart) btnStart.disabled = false; if (btnEnd) btnEnd.disabled = false; renderSegStatus(); });
     player.addEventListener("loadeddata", () => { if (btnLoadLocal) btnLoadLocal.classList.remove("pulse"); if (player.videoHeight > 0) applyMode(true); });
