@@ -103,6 +103,185 @@
     }
   }
 
+  /* ══════════════════════════════════════
+     Spectrogram Engine
+     ══════════════════════════════════════ */
+  function createSpectrogram(canvas, player) {
+    const ctx = canvas.getContext("2d");
+    let audioCtx = null;
+    let analyser = null;
+    let source = null;
+    let connected = false;
+    let rafId = null;
+    let running = false;
+
+    /* ── colour palette: logo-inspired purple gradient ── */
+    // silence → deep navy → purple → magenta → pink-white
+    const GRADIENT_STOPS = [
+      [0.00, 10, 8, 28],
+      [0.15, 30, 15, 70],
+      [0.30, 70, 20, 120],
+      [0.50, 140, 40, 170],
+      [0.70, 200, 60, 180],
+      [0.85, 240, 120, 200],
+      [1.00, 255, 220, 255]
+    ];
+
+    /* build a 256-entry lookup table */
+    const colorLUT = new Array(256);
+    (function buildLUT() {
+      for (let i = 0; i < 256; i++) {
+        const t = i / 255;
+        let lo = 0, hi = GRADIENT_STOPS.length - 1;
+        for (let s = 0; s < GRADIENT_STOPS.length - 1; s++) {
+          if (t >= GRADIENT_STOPS[s][0] && t <= GRADIENT_STOPS[s + 1][0]) {
+            lo = s; hi = s + 1; break;
+          }
+        }
+        const range = GRADIENT_STOPS[hi][0] - GRADIENT_STOPS[lo][0] || 1;
+        const f = (t - GRADIENT_STOPS[lo][0]) / range;
+        const r = Math.round(GRADIENT_STOPS[lo][1] + (GRADIENT_STOPS[hi][1] - GRADIENT_STOPS[lo][1]) * f);
+        const g = Math.round(GRADIENT_STOPS[lo][2] + (GRADIENT_STOPS[hi][2] - GRADIENT_STOPS[lo][2]) * f);
+        const b = Math.round(GRADIENT_STOPS[lo][3] + (GRADIENT_STOPS[hi][3] - GRADIENT_STOPS[lo][3]) * f);
+        colorLUT[i] = [r, g, b];
+      }
+    })();
+
+    let zoomLevel = 1; // 1 = full range, 2 = bottom half, etc.
+    const MAX_ZOOM = 4;
+    const MIN_ZOOM = 1;
+
+    /* ── connect Web Audio ── */
+    function ensureAudio() {
+      if (connected) return true;
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 2048;
+        analyser.smoothingTimeConstant = 0.3;
+        analyser.minDecibels = -100;
+        analyser.maxDecibels = -20;
+        source = audioCtx.createMediaElementSource(player);
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        connected = true;
+        return true;
+      } catch (e) {
+        console.warn("[Spectrogram] Web Audio failed:", e);
+        return false;
+      }
+    }
+
+    /* ── drawing state ── */
+    let writeX = 0;
+    const freqData = new Uint8Array(1024);
+
+    function resetCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = `rgb(${colorLUT[0][0]},${colorLUT[0][1]},${colorLUT[0][2]})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      writeX = 0;
+    }
+
+    /* ── main draw column ── */
+    function drawColumn() {
+      if (!analyser) return;
+      analyser.getByteFrequencyData(freqData);
+
+      const W = canvas.width;
+      const H = canvas.height;
+
+      /* scroll: shift everything 1px left, draw new column at right */
+      if (writeX >= W) {
+        const img = ctx.getImageData(1, 0, W - 1, H);
+        ctx.putImageData(img, 0, 0);
+        writeX = W - 1;
+      }
+
+      /* which bins to show based on zoom */
+      const totalBins = analyser.frequencyBinCount; // 1024
+      const visibleBins = Math.floor(totalBins / zoomLevel);
+      const startBin = 0; // always start from lowest frequency
+
+      const imgCol = ctx.createImageData(1, H);
+      const d = imgCol.data;
+
+      for (let y = 0; y < H; y++) {
+        /* y=0 is top of canvas = highest freq shown */
+        const freqIdx = startBin + Math.floor((1 - y / H) * visibleBins);
+        const clamped = Math.max(0, Math.min(255, freqData[freqIdx] || 0));
+        const c = colorLUT[clamped];
+        const off = y * 4;
+        d[off] = c[0];
+        d[off + 1] = c[1];
+        d[off + 2] = c[2];
+        d[off + 3] = 255;
+      }
+
+      ctx.putImageData(imgCol, writeX, 0);
+      writeX++;
+    }
+
+    /* ── animation loop ── */
+    function loop() {
+      if (!running) return;
+      drawColumn();
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function start() {
+      if (!ensureAudio()) return;
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      running = true;
+      loop();
+    }
+
+    function stop() {
+      running = false;
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    }
+
+    function clear() {
+      stop();
+      resetCanvas();
+    }
+
+    function zoomIn() {
+      if (zoomLevel < MAX_ZOOM) { zoomLevel *= 2; clear(); }
+    }
+
+    function zoomOut() {
+      if (zoomLevel > MIN_ZOOM) { zoomLevel /= 2; clear(); }
+    }
+
+    function getZoomLevel() { return zoomLevel; }
+
+    function destroy() {
+      stop();
+      if (source) { try { source.disconnect(); } catch {} }
+      if (analyser) { try { analyser.disconnect(); } catch {} }
+      if (audioCtx) { try { audioCtx.close(); } catch {} }
+      connected = false;
+    }
+
+    /* handle resize */
+    let resizeTimer = null;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (canvas.offsetParent !== null) resetCanvas();
+      }, 200);
+    });
+
+    resetCanvas();
+
+    return { start, stop, clear, zoomIn, zoomOut, getZoomLevel, destroy, resetCanvas, ensureAudio };
+  }
+
   /* ── storage consent ── */
   function showStorageConsent() {
     const KEY = "lyricear_storage_ok";
@@ -373,6 +552,7 @@
         setLamp("none");
         showMediaName("");
         updateForgetBtn(false);
+        if (spectrogram) spectrogram.clear();
         toast("🗑 Медиа удалено из кэша");
       });
     }
@@ -411,6 +591,56 @@
       setLamp("none");
     });
 
+    /* ══════════════════════════════════════
+       Spectrogram UI
+       ══════════════════════════════════════ */
+    const specWrap    = $("#spectrogramWrap");
+    const specCanvas  = $("#spectrogramCanvas");
+    const specToggle  = $("#spectrogramToggle");
+    const specZoomIn  = $("#specZoomIn");
+    const specZoomOut = $("#specZoomOut");
+    const specZoomLbl = $("#specZoomLabel");
+
+    let spectrogram = null;
+
+    if (specCanvas && player) {
+      spectrogram = createSpectrogram(specCanvas, player);
+    }
+
+    /* collapse / expand */
+    if (specToggle && specWrap) {
+      specToggle.addEventListener("click", () => {
+        const collapsed = specWrap.classList.toggle("collapsed");
+        specToggle.textContent = collapsed ? "📊 Спектрограмма ▸" : "📊 Спектрограмма ▾";
+        if (!collapsed && spectrogram) spectrogram.resetCanvas();
+      });
+    }
+
+    /* zoom */
+    function updateZoomLabel() {
+      if (specZoomLbl && spectrogram) {
+        specZoomLbl.textContent = `×${spectrogram.getZoomLevel()}`;
+      }
+    }
+    if (specZoomIn && spectrogram) {
+      specZoomIn.addEventListener("click", () => { spectrogram.zoomIn(); updateZoomLabel(); });
+    }
+    if (specZoomOut && spectrogram) {
+      specZoomOut.addEventListener("click", () => { spectrogram.zoomOut(); updateZoomLabel(); });
+    }
+
+    /* start/stop spectrogram with playback */
+    player.addEventListener("play", () => {
+      if (spectrogram) {
+        spectrogram.ensureAudio();
+        spectrogram.clear();
+        spectrogram.start();
+      }
+    });
+    player.addEventListener("pause", () => { if (spectrogram) spectrogram.stop(); });
+    player.addEventListener("ended", () => { if (spectrogram) spectrogram.stop(); });
+    player.addEventListener("seeked", () => { if (spectrogram && !player.paused) spectrogram.clear(); });
+
     /* ── segment controls ── */
     function renderSegStatus() {
       const segEl = $("#segStatus");
@@ -441,12 +671,14 @@
       }
       stopLoop();
       player.currentTime = Number(s);
+      /* spectrogram clears on play event */
       player.play().catch(() => {});
       loopTimer = setInterval(() => {
         if (!player || player.paused) return;
         if (player.currentTime >= Number(e) - 0.03) {
           if (loopToggle && loopToggle.checked) {
             player.currentTime = Number(s);
+            if (spectrogram) spectrogram.clear();
           } else {
             stopLoop();
             player.pause();
