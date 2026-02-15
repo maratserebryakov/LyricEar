@@ -9,48 +9,80 @@
 <body>
   <div id="toast" class="toast"></div>
 
-  <!-- ═══ Header ═══ -->
+  <!-- ═══ Logo (auto-hide on scroll down, show on scroll up) ═══ -->
+  <div id="logoBar" class="logo-bar">
+    <a href="index.html" class="logo-link">
+      <svg class="logo-svg" width="32" height="32" viewBox="0 0 44 44" fill="none">
+        <circle cx="22" cy="22" r="21" fill="#111118" stroke="url(#logoRim)" stroke-width="1"/>
+        <path d="M8 28 C12 14,20 10,22 10 C24 10,32 14,36 28" stroke="url(#auroraG)" stroke-width="1.2" fill="none" opacity=".9"/>
+        <path d="M10 30 C14 18,19 14,22 14 C25 14,30 18,34 30" stroke="url(#auroraG)" stroke-width=".8" fill="none" opacity=".5"/>
+        <path d="M10 33 Q14 30,16 33 T22 33 T28 33 T34 33" stroke="#c084fc" stroke-width="1" fill="none" opacity=".7"/>
+        <circle cx="22" cy="11" r="1.2" fill="#f0abfc" opacity=".9"/>
+        <defs>
+          <linearGradient id="logoRim" x1="0" y1="0" x2="44" y2="44">
+            <stop offset="0%" stop-color="#7c3aed" stop-opacity=".4"/>
+            <stop offset="50%" stop-color="#22d3ee" stop-opacity=".3"/>
+            <stop offset="100%" stop-color="#34d399" stop-opacity=".4"/>
+          </linearGradient>
+          <linearGradient id="auroraG" x1="8" y1="28" x2="36" y2="10">
+            <stop offset="0%" stop-color="#7c3aed"/>
+            <stop offset="50%" stop-color="#22d3ee"/>
+            <stop offset="100%" stop-color="#34d399"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="logo-text">
+        <span class="logo-name">LyricEar</span>
+        <span class="logo-sub">учим языки на слух</span>
+      </span>
+    </a>
+  </div>
+
+  <!-- ═══ Header (compact) ═══ -->
   <header class="song-header">
     <h1 id="songTitle"></h1>
-    <p id="songArtist"></p>
-    <p><span id="songLang" class="pill"></span></p>
+    <p><span id="songArtist"></span> · <span id="songLang" class="pill"></span></p>
     <p id="songHint" class="hint"></p>
   </header>
 
-  <!-- ═══ Sticky block: player + spectrogram ═══ -->
+  <!-- ═══ Sticky block ═══ -->
   <div id="stickyBlock" class="sticky-block">
 
-    <!-- Player -->
+    <!-- Player compact -->
     <section class="panel player-panel">
-      <div class="media-bar">
-        <span class="mini">MEDIA</span>
-        <span class="lamp lamp-off" id="mediaLamp"></span>
-        <span class="mini mono" id="tNow">0.00s</span>
+      <!-- Top row: video left + controls right -->
+      <div class="player-compact">
+        <div id="videoWrap" class="video-wrap is-audio">
+          <video id="player" playsinline preload="auto"></video>
+          <button id="btnPlayOverlay" class="play-overlay">▶</button>
+        </div>
+        <div class="player-side">
+          <div class="media-bar">
+            <span class="lamp lamp-off" id="mediaLamp"></span>
+            <span class="mini mono" id="tNow">0.00s</span>
+          </div>
+          <div class="media-btns">
+            <button class="ghost compact-btn pulse" id="btnLoadLocal">📁 Файл</button>
+            <input type="file" id="mediaPick" accept="audio/*,video/*" hidden>
+            <button class="primary compact-btn" id="btnLoadYaDisk">☁ Я.Диск</button>
+            <button class="bad compact-btn" id="btnForgetMedia" style="display:none">🗑</button>
+          </div>
+          <span class="mini mono" id="mediaName"></span>
+        </div>
       </div>
 
-      <div id="videoWrap" class="video-wrap is-audio">
-        <video id="player" playsinline preload="auto"></video>
-      </div>
-
+      <!-- Progress bar -->
       <div class="play-row">
-        <button id="btnPlay">▶</button>
+        <button id="btnPlay" class="play-btn-mini">▶</button>
         <input type="range" id="playProgress" min="0" max="1000" value="0">
-        <span id="playTime">0:00 / 0:00</span>
-      </div>
-
-      <div class="media-row">
-        <button class="ghost pulse" id="btnLoadLocal">📁 Выбрать файл</button>
-        <input type="file" id="mediaPick" accept="audio/*,video/*" hidden>
-        <button class="primary" id="btnLoadYaDisk">☁ Яндекс.Диск</button>
-        <button class="bad tiny" id="btnForgetMedia" style="display:none">🗑 Забыть</button>
-        <span class="mini mono" id="mediaName"></span>
+        <span id="playTime" class="mini mono">0:00/0:00</span>
       </div>
     </section>
 
     <!-- Spectrogram -->
     <section class="panel spec-panel">
       <div class="spec-toolbar">
-        <button class="ghost" id="spectrogramToggle">📊 Спектрограмма ▾</button>
+        <button class="ghost compact-btn" id="spectrogramToggle">📊 Спектр ▾</button>
         <button class="ghost spec-zoom-btn" id="specZoomOut">−</button>
         <span class="mini mono" id="specZoomLabel">×1</span>
         <button class="ghost spec-zoom-btn" id="specZoomIn">+</button>
@@ -63,30 +95,21 @@
   </div>
 
   <!-- ═══ Segment controls ═══ -->
-  <section class="panel">
-    <div id="segStatus" class="seg-status"></div>
-
-    <div class="seg-buttons">
-      <button class="primary" id="btnPlaySeg" disabled>▶ Фрагмент</button>
-      <button class="ghost" id="btnStart" disabled>⏱ Start</button>
-      <button class="ghost" id="btnEnd" disabled>⏱ End</button>
-    </div>
-    <div class="seg-buttons" style="margin-top:6px;">
-      <button class="bad" id="btnClear" disabled>✕ Сброс</button>
-    </div>
-
-    <div class="toggle-row">
-      <label><input type="checkbox" id="loopToggle" /> 🔁 Зациклить</label>
-      <label><input type="checkbox" id="autoNextToggle" /> ⏭ Авто</label>
-    </div>
-
-    <div class="toggle-row">
-      <label><input type="checkbox" id="globalShowOrig" /> 🔍 Оригинал</label>
-      <label><input type="checkbox" id="globalShowPhon" /> 👂 Автор</label>
+  <section class="panel seg-panel">
+    <div class="seg-row">
+      <div id="segStatus" class="seg-status"></div>
+      <button class="primary compact-btn" id="btnPlaySeg" disabled>▶ Фрагм</button>
+      <button class="ghost compact-btn" id="btnStart" disabled>⏱S</button>
+      <button class="ghost compact-btn" id="btnEnd" disabled>⏱E</button>
+      <button class="bad compact-btn" id="btnClear" disabled>✕</button>
     </div>
     <div class="toggle-row">
-      <label><input type="checkbox" id="globalShowTrans" /> 💬 Переводы</label>
-      <label><input type="checkbox" id="globalShowWhy" /> 🧠 Почему</label>
+      <label><input type="checkbox" id="loopToggle" /> 🔁</label>
+      <label><input type="checkbox" id="autoNextToggle" /> ⏭</label>
+      <label><input type="checkbox" id="globalShowOrig" /> 🔍</label>
+      <label><input type="checkbox" id="globalShowPhon" /> 👂</label>
+      <label><input type="checkbox" id="globalShowTrans" /> 💬</label>
+      <label><input type="checkbox" id="globalShowWhy" /> 🧠</label>
     </div>
   </section>
 
@@ -102,6 +125,6 @@
     </p>
   </footer>
 
-  <script src="assets/app.js?v=4"></script>
+  <script src="assets/app.js?v=5"></script>
 </body>
 </html>
