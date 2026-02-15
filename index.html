@@ -10,8 +10,8 @@
 
   <div id="toast" class="toast"></div>
 
-  <!-- ═══ Logo ═══ -->
-  <div class="logo-bar">
+  <!-- Logo -->
+  <div id="logoBar" class="logo-bar">
     <a href="index.html" class="logo-link">
       <svg class="logo-svg" width="40" height="40" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="100" cy="100" r="96" stroke="url(#hRim)" stroke-width="3" fill="#0e0b1a"/>
@@ -51,7 +51,6 @@
     </a>
   </div>
 
-  <!-- ═══ Title + search ═══ -->
   <h1 style="font-size:1.3rem; margin:8px 0 4px; color:var(--accent2);">
     Песни — учим языки по фрагментам
   </h1>
@@ -64,44 +63,12 @@
     <select id="langFilter"></select>
   </div>
 
-  <!-- ═══ Song list ═══ -->
   <div id="songsList"></div>
-
-  <!-- ═══ Debug (remove after fixing) ═══ -->
-  <pre id="debug" style="color:#f59e0b; font-size:.75rem; margin-top:20px; padding:8px;"></pre>
 
   <footer class="page-footer">
     <p class="mini muted">LyricEar © 2025</p>
   </footer>
 
   <script src="assets/app.js?v=5"></script>
-  <script>
-    // Diagnostic: check if catalog loads
-    (async function(){
-      const d = document.getElementById('debug');
-      try {
-        d.textContent = '⏳ Loading catalog...\n';
-        const r = await fetch('data/catalog.json', {cache:'no-store'});
-        d.textContent += `Status: ${r.status} ${r.statusText}\n`;
-        if (r.ok) {
-          const j = await r.json();
-          d.textContent += `Songs: ${(j.songs||[]).length}\n`;
-          d.textContent += JSON.stringify(j.songs?.map(s=>s.title), null, 2);
-        } else {
-          d.textContent += `ERROR: could not load catalog\n`;
-        }
-      } catch(e) {
-        d.textContent += `FETCH ERROR: ${e.message}\n`;
-      }
-
-      // Check app.js version
-      try {
-        const r2 = await fetch('assets/app.js?v=5&check=' + Date.now(), {cache:'no-store'});
-        d.textContent += `\napp.js status: ${r2.status}, size: ${(await r2.text()).length} chars`;
-      } catch(e2) {
-        d.textContent += `\napp.js ERROR: ${e2.message}`;
-      }
-    })();
-  </script>
 </body>
 </html>
