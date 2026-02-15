@@ -93,7 +93,7 @@
   /* ══════════════════════════════════════
      Spectrogram Engine
      ══════════════════════════════════════ */
-      function createSpectrogram(canvas, playerEl) {
+  function createSpectrogram(canvas, playerEl) {
     const ctx = canvas.getContext("2d");
     let audioCtx = null, analyser = null, source = null;
     let connected = false, rafId = null, running = false;
@@ -133,13 +133,13 @@
     let noiseFloor = 5;
     let peakVal = 80;
 
-        const FREQ_ZONES = [
+    const FREQ_ZONES = [
       { freq: 300,  label: "300 Hz",  desc: "гласные",    color: "rgba(55,230,255,0.45)" },
-      { freq: 3000, label: "3 kHz",   desc: "согласные",   color: "rgba(215,60,195,0.45)" },
-      { freq: 6000, label: "6 kHz",   desc: "шипящие",     color: "rgba(155,95,238,0.4)" },
+      { freq: 3000, label: "3 kHz",   desc: "согласные",  color: "rgba(215,60,195,0.45)" },
+      { freq: 6000, label: "6 kHz",   desc: "шипящие",    color: "rgba(155,95,238,0.4)" },
     ];
 
-        const ZONE_BANDS = [
+    const ZONE_BANDS = [
       { from: 0,    to: 300,   bg: "rgba(55,230,255,0.015)" },
       { from: 300,  to: 3000,  bg: "rgba(215,60,195,0.012)" },
       { from: 3000, to: 24000, bg: "rgba(155,95,238,0.01)" },
@@ -264,7 +264,7 @@
         const bin = Math.floor((1 - y / H) * visBins);
         const raw = freqData[bin] || 0;
 
-                // normalize to 0..1 using adaptive range
+        // normalize to 0..1 using adaptive range
         let norm = range > 0 ? (raw - floor) / range : 0;
         if (!isFinite(norm)) norm = 0;
         norm = Math.max(0, Math.min(1, norm));
@@ -293,7 +293,7 @@
     }
     function stop()    { running = false; if (rafId) { cancelAnimationFrame(rafId); rafId = null; } }
     function clear()   { resetCanvas(); }
-        function rewind() { writeX = 0; }    
+    function rewind()  { writeX = 0; }
     function zoomIn()  { if (zoom < 4) { zoom *= 2; clear(); } }
     function zoomOut() { if (zoom > 1) { zoom /= 2; clear(); } }
     function getZoom() { return zoom; }
@@ -489,8 +489,9 @@
       ensureSpec();
       if (spec) { spec.ensureAudio(); spec.start(); }
     }
-    function specStop()  { if (spec) spec.stop(); }
-    function specClear() { if (spec) spec.clear(); }
+    function specStop()   { if (spec) spec.stop(); }
+    function specClear()  { if (spec) spec.clear(); }
+    function specRewind() { if (spec) spec.rewind(); }
 
     /* load blob */
     async function loadBlob(blob, name, mime, src, persist) {
@@ -655,7 +656,7 @@
         if (player.currentTime >= Number(e) - 0.03) {
           if (loopToggle?.checked) {
             player.currentTime = Number(s);
-            specClear();
+            specRewind();
           } else {
             stopLoop(); player.pause();
             if (autoNextToggle?.checked) {
