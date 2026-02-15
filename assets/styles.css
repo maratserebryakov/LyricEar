@@ -300,3 +300,38 @@ button:disabled { opacity: .35; cursor: default; }
 .songTitle { font-weight: 600; font-size: 1.1rem; color: var(--accent2); }
 .songMeta  { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 .songSmall { font-size: .85rem; color: var(--muted); margin-top: 4px; }
+/* ══════════════════════════════════════
+   Logo
+   ══════════════════════════════════════ */
+.logo-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--text);
+  padding: 12px 4px 4px;
+}
+.logo-link:hover { text-decoration: none; opacity: .85; }
+
+.logo-svg { flex-shrink: 0; }
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.logo-name {
+  font-size: 1.35rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #a855f7, #22d3ee, #34d399);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logo-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
