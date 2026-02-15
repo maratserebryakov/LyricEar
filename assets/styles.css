@@ -86,8 +86,15 @@ button:disabled { opacity: .35; cursor: default; }
 .logo-link:hover { text-decoration: none; }
 .logo-svg { flex-shrink: 0; }
 .logo-text { display: flex; flex-direction: column; line-height: 1.2; }
-.logo-name { font-size: 1.15rem; font-weight: 700; color: var(--accent2); }
-.logo-sub  { font-size: 0.72rem; color: var(--muted); }
+.logo-name {
+  font-size: 1.3rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, #a855f7, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.logo-sub { font-size: 0.75rem; color: var(--muted); }
 
 /* ── Toast ── */
 .toast {
