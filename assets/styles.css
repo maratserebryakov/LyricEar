@@ -89,7 +89,7 @@ button:disabled { opacity: .35; cursor: default; }
 .logo-name {
   font-size: 1.3rem;
   font-weight: 800;
-  background: linear-gradient(90deg, #a855f7, #22d3ee);
+  background: linear-gradient(135deg, #a855f7 0%, #c084fc 30%, #22d3ee 70%, #06b6d4 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
