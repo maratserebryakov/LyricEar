@@ -1,5 +1,5 @@
 ;(function () {
-  /* ── helpers ── */
+  /* helpers */
   const $ = (s, r = document) => r.querySelector(s);
 
   function esc(s) {
@@ -27,78 +27,74 @@
 
   async function fetchJson(url) {
     const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) throw new Error("HTTP " + r.status);
     return r.json();
   }
 
-  /* ══════════════════════════════════════
-     IndexedDB — media blob cache
-     ══════════════════════════════════════ */
-  const IDB_NAME = "lyricear-media";
-  const IDB_STORE = "files";
-  const IDB_VERSION = 1;
+  /* IndexedDB */
+  var IDB_NAME = "lyricear-media";
+  var IDB_STORE = "files";
+  var IDB_VERSION = 1;
 
   function idbOpen() {
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(IDB_NAME, IDB_VERSION);
-      req.onupgradeneeded = () => {
-        const db = req.result;
+    return new Promise(function(resolve, reject) {
+      var req = indexedDB.open(IDB_NAME, IDB_VERSION);
+      req.onupgradeneeded = function() {
+        var db = req.result;
         if (!db.objectStoreNames.contains(IDB_STORE))
           db.createObjectStore(IDB_STORE);
       };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror   = () => reject(req.error);
+      req.onsuccess = function() { resolve(req.result); };
+      req.onerror   = function() { reject(req.error); };
     });
   }
 
   async function idbSave(songId, blob, fileName, mimeType) {
     try {
-      const db = await idbOpen();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(IDB_STORE, "readwrite");
+      var db = await idbOpen();
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction(IDB_STORE, "readwrite");
         tx.objectStore(IDB_STORE).put(
-          { blob, name: fileName, type: mimeType, savedAt: Date.now() },
+          { blob: blob, name: fileName, type: mimeType, savedAt: Date.now() },
           songId
         );
-        tx.oncomplete = () => { db.close(); resolve(true); };
-        tx.onerror    = () => { db.close(); reject(tx.error); };
+        tx.oncomplete = function() { db.close(); resolve(true); };
+        tx.onerror    = function() { db.close(); reject(tx.error); };
       });
     } catch (e) { console.warn("[IDB] save failed:", e); return false; }
   }
 
   async function idbLoad(songId) {
     try {
-      const db = await idbOpen();
-      return new Promise((resolve, reject) => {
-        const tx  = db.transaction(IDB_STORE, "readonly");
-        const req = tx.objectStore(IDB_STORE).get(songId);
-        req.onsuccess = () => { db.close(); resolve(req.result || null); };
-        req.onerror   = () => { db.close(); reject(req.error); };
+      var db = await idbOpen();
+      return new Promise(function(resolve, reject) {
+        var tx  = db.transaction(IDB_STORE, "readonly");
+        var req = tx.objectStore(IDB_STORE).get(songId);
+        req.onsuccess = function() { db.close(); resolve(req.result || null); };
+        req.onerror   = function() { db.close(); reject(req.error); };
       });
     } catch (e) { console.warn("[IDB] load failed:", e); return null; }
   }
 
   async function idbDelete(songId) {
     try {
-      const db = await idbOpen();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(IDB_STORE, "readwrite");
+      var db = await idbOpen();
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction(IDB_STORE, "readwrite");
         tx.objectStore(IDB_STORE).delete(songId);
-        tx.oncomplete = () => { db.close(); resolve(true); };
-        tx.onerror    = () => { db.close(); reject(tx.error); };
+        tx.oncomplete = function() { db.close(); resolve(true); };
+        tx.onerror    = function() { db.close(); reject(tx.error); };
       });
     } catch (e) { console.warn("[IDB] delete failed:", e); return false; }
   }
 
-  /* ══════════════════════════════════════
-     Spectrogram Engine (unchanged)
-     ══════════════════════════════════════ */
+  /* Spectrogram Engine */
   function createSpectrogram(canvas, playerEl) {
-    const ctx = canvas.getContext("2d");
-    let audioCtx = null, analyser = null, source = null;
-    let connected = false, rafId = null, running = false;
+    var ctx = canvas.getContext("2d");
+    var audioCtx = null, analyser = null, source = null;
+    var connected = false, rafId = null, running = false;
 
-    const STOPS = [
+    var STOPS = [
       [0.00,   4,   2,  12],
       [0.10,  25,  10,  55],
       [0.20,  60,  18, 115],
@@ -110,36 +106,36 @@
       [0.92,  55, 228, 255],
       [1.00, 230, 253, 255]
     ];
-    const LUT = new Array(256);
-    for (let i = 0; i < 256; i++) {
-      const t = i / 255;
-      let lo = 0, hi = STOPS.length - 1;
-      for (let s = 0; s < STOPS.length - 1; s++) {
+    var LUT = new Array(256);
+    for (var i = 0; i < 256; i++) {
+      var t = i / 255;
+      var lo = 0, hi = STOPS.length - 1;
+      for (var s = 0; s < STOPS.length - 1; s++) {
         if (t >= STOPS[s][0] && t <= STOPS[s + 1][0]) { lo = s; hi = s + 1; break; }
       }
-      const range = STOPS[hi][0] - STOPS[lo][0] || 1;
-      const f = (t - STOPS[lo][0]) / range;
+      var range = STOPS[hi][0] - STOPS[lo][0] || 1;
+      var f = (t - STOPS[lo][0]) / range;
       LUT[i] = [
-        Math.round(STOPS[lo][[1]](#annotation-100661-0) + (STOPS[hi][[1]](#annotation-100661-0) - STOPS[lo][[1]](#annotation-100661-0)) * f),
-        Math.round(STOPS[lo][[2]](#annotation-100661-1) + (STOPS[hi][[2]](#annotation-100661-1) - STOPS[lo][[2]](#annotation-100661-1)) * f),
-        Math.round(STOPS[lo][[3]](#annotation-100661-2) + (STOPS[hi][[3]](#annotation-100661-2) - STOPS[lo][[3]](#annotation-100661-2)) * f)
+        Math.round(STOPS[lo][1] + (STOPS[hi][1] - STOPS[lo][1]) * f),
+        Math.round(STOPS[lo][2] + (STOPS[hi][2] - STOPS[lo][2]) * f),
+        Math.round(STOPS[lo][3] + (STOPS[hi][3] - STOPS[lo][3]) * f)
       ];
     }
 
-    let zoom = 1, writeX = 0, freqData = null;
-    let noiseFloor = 5;
-    let peakVal = 80;
+    var zoom = 1, writeX = 0, freqData = null;
+    var noiseFloor = 5;
+    var peakVal = 80;
 
-    const FREQ_ZONES = [
-      { freq: 300,  label: "300 Hz",  desc: "гласные",    color: "rgba(55,230,255,0.45)" },
-      { freq: 3000, label: "3 kHz",   desc: "согласные",  color: "rgba(215,60,195,0.45)" },
-      { freq: 6000, label: "6 kHz",   desc: "шипящие",    color: "rgba(155,95,238,0.4)" },
+    var FREQ_ZONES = [
+      { freq: 300,  label: "300 Hz",  desc: "гласные",   color: "rgba(55,230,255,0.45)" },
+      { freq: 3000, label: "3 kHz",   desc: "согласные", color: "rgba(215,60,195,0.45)" },
+      { freq: 6000, label: "6 kHz",   desc: "шипящие",   color: "rgba(155,95,238,0.4)" }
     ];
 
-    const ZONE_BANDS = [
+    var ZONE_BANDS = [
       { from: 0,    to: 300,   bg: "rgba(55,230,255,0.015)" },
       { from: 300,  to: 3000,  bg: "rgba(215,60,195,0.012)" },
-      { from: 3000, to: 24000, bg: "rgba(155,95,238,0.01)" },
+      { from: 3000, to: 24000, bg: "rgba(155,95,238,0.01)" }
     ];
 
     function getMaxFreq() {
@@ -147,31 +143,31 @@
     }
 
     function freqToY(freq, H) {
-      const mf = getMaxFreq() / zoom;
-      const r = freq / mf;
+      var mf = getMaxFreq() / zoom;
+      var r = freq / mf;
       return r > 1 ? -1 : Math.round(H * (1 - r));
     }
 
     function drawZones() {
-      const W = canvas.width, H = canvas.height;
-      const mf = getMaxFreq() / zoom;
-      const dpr = window.devicePixelRatio || 1;
+      var W = canvas.width, H = canvas.height;
+      var mf = getMaxFreq() / zoom;
+      var dpr = window.devicePixelRatio || 1;
 
-      ZONE_BANDS.forEach(b => {
+      ZONE_BANDS.forEach(function(b) {
         if (b.from >= mf) return;
-        const y1 = Math.max(0, freqToY(Math.min(b.to, mf), H));
-        const y2 = Math.min(H, freqToY(b.from, H));
+        var y1 = Math.max(0, freqToY(Math.min(b.to, mf), H));
+        var y2 = Math.min(H, freqToY(b.from, H));
         ctx.fillStyle = b.bg;
         ctx.fillRect(0, y1, W, y2 - y1);
       });
 
-      const fs = Math.round(10 * dpr);
-      ctx.font = `bold ${fs}px -apple-system,BlinkMacSystemFont,sans-serif`;
+      var fs = Math.round(10 * dpr);
+      ctx.font = "bold " + fs + "px -apple-system,BlinkMacSystemFont,sans-serif";
       ctx.textBaseline = "bottom";
 
-      FREQ_ZONES.forEach(z => {
+      FREQ_ZONES.forEach(function(z) {
         if (z.freq >= mf) return;
-        const y = freqToY(z.freq, H);
+        var y = freqToY(z.freq, H);
         if (y < 0 || y > H) return;
 
         ctx.strokeStyle = z.color;
@@ -180,12 +176,12 @@
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
         ctx.setLineDash([]);
 
-        const txt = `${z.label}  ${z.desc}`;
-        const tw = ctx.measureText(txt).width;
-        const p = 3 * dpr;
+        var txt = z.label + "  " + z.desc;
+        var tw = ctx.measureText(txt).width;
+        var p = 3 * dpr;
 
         ctx.fillStyle = "rgba(0,0,0,0.75)";
-        const bx = 3 * dpr, by = y - fs - p * 2, bw = tw + p * 2, bh = fs + p * 2;
+        var bx = 3 * dpr, by = y - fs - p * 2, bw = tw + p * 2, bh = fs + p * 2;
         ctx.beginPath();
         if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 3 * dpr);
         else ctx.rect(bx, by, bw, bh);
@@ -215,12 +211,12 @@
     }
 
     function resetCanvas() {
-      const dpr = window.devicePixelRatio || 1;
-      const r = canvas.getBoundingClientRect();
+      var dpr = window.devicePixelRatio || 1;
+      var r = canvas.getBoundingClientRect();
       canvas.width  = Math.round(r.width  * dpr);
       canvas.height = Math.round(r.height * dpr);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = `rgb(${LUT[0][0]},${LUT[0][[1]](#annotation-100661-0)},${LUT[0][[2]](#annotation-100661-1)})`;
+      ctx.fillStyle = "rgb(" + LUT[0][0] + "," + LUT[0][1] + "," + LUT[0][2] + ")";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       writeX = 0;
       noiseFloor = 5; peakVal = 80;
@@ -231,41 +227,41 @@
       if (!analyser || !freqData) return;
       analyser.getByteFrequencyData(freqData);
 
-      const W = canvas.width, H = canvas.height;
+      var W = canvas.width, H = canvas.height;
       if (writeX >= W) {
-        const img = ctx.getImageData(1, 0, W - 1, H);
+        var img = ctx.getImageData(1, 0, W - 1, H);
         ctx.putImageData(img, 0, 0);
         writeX = W - 1;
       }
 
-      const totalBins = analyser.frequencyBinCount;
-      const visBins = Math.floor(totalBins / zoom);
+      var totalBins = analyser.frequencyBinCount;
+      var visBins = Math.floor(totalBins / zoom);
 
-      let frameMin = 255, frameMax = 0;
-      for (let b = 0; b < visBins; b++) {
-        const v = freqData[b];
+      var frameMin = 255, frameMax = 0;
+      for (var b = 0; b < visBins; b++) {
+        var v = freqData[b];
         if (v < frameMin) frameMin = v;
         if (v > frameMax) frameMax = v;
       }
       noiseFloor += (frameMin - noiseFloor) * 0.05;
       peakVal    += (Math.max(frameMax, noiseFloor + 20) - peakVal) * 0.08;
-      const floor = Math.max(0, noiseFloor - 2);
-      const range = Math.max(30, peakVal - floor);
+      var floor = Math.max(0, noiseFloor - 2);
+      var dynRange = Math.max(30, peakVal - floor);
 
-      const col = ctx.createImageData(1, H);
-      const d = col.data;
+      var col = ctx.createImageData(1, H);
+      var d = col.data;
 
-      for (let y = 0; y < H; y++) {
-        const bin = Math.floor((1 - y / H) * visBins);
-        const raw = freqData[bin] || 0;
-        let norm = range > 0 ? (raw - floor) / range : 0;
+      for (var y = 0; y < H; y++) {
+        var bin = Math.floor((1 - y / H) * visBins);
+        var raw = freqData[bin] || 0;
+        var norm = dynRange > 0 ? (raw - floor) / dynRange : 0;
         if (!isFinite(norm)) norm = 0;
         norm = Math.max(0, Math.min(1, norm));
         norm = Math.pow(norm, 0.45);
-        const idx = Math.max(0, Math.min(255, Math.round(norm * 255)));
-        const c = LUT[idx] || LUT[0];
-        const off = y * 4;
-        d[off] = c[0]; d[off+1] = c[[1]](#annotation-100661-0); d[off+2] = c[[2]](#annotation-100661-1); d[off+3] = 255;
+        var idx = Math.max(0, Math.min(255, Math.round(norm * 255)));
+        var c = LUT[idx] || LUT[0];
+        var off = y * 4;
+        d[off] = c[0]; d[off+1] = c[1]; d[off+2] = c[2]; d[off+3] = 255;
       }
 
       ctx.putImageData(col, writeX, 0);
@@ -287,30 +283,30 @@
     function zoomOut() { if (zoom > 1) { zoom /= 2; clear(); } }
     function getZoom() { return zoom; }
 
-    let resizeT = null;
-    window.addEventListener("resize", () => {
+    var resizeT = null;
+    window.addEventListener("resize", function() {
       clearTimeout(resizeT);
-      resizeT = setTimeout(() => { if (canvas.offsetParent !== null) resetCanvas(); }, 200);
+      resizeT = setTimeout(function() { if (canvas.offsetParent !== null) resetCanvas(); }, 200);
     });
 
     resetCanvas();
-    return { start, stop, clear, zoomIn, zoomOut, getZoom, ensureAudio, resetCanvas };
+    return { start: start, stop: stop, clear: clear, zoomIn: zoomIn, zoomOut: zoomOut, getZoom: getZoom, ensureAudio: ensureAudio, resetCanvas: resetCanvas };
   }
 
-  /* ── storage consent ── */
+  /* storage consent */
   function showStorageConsent() {
-    const KEY = "lyricear_storage_ok";
+    var KEY = "lyricear_storage_ok";
     if (localStorage.getItem(KEY)) return;
-    const bar = document.createElement("div");
+    var bar = document.createElement("div");
     bar.id = "storageBanner";
     bar.innerHTML =
-      `<span>Этот сайт сохраняет прогресс и медиа в браузере. Данные не передаются на сервер.</span>
-       <button id="storageOk">Понятно</button>`;
+      '<span>Этот сайт сохраняет прогресс и медиа в браузере. Данные не передаются на сервер.</span>' +
+      '<button id="storageOk">Понятно</button>';
     document.body.appendChild(bar);
-    $("#storageOk").addEventListener("click", () => { localStorage.setItem(KEY, "1"); bar.remove(); });
+    $("#storageOk").addEventListener("click", function() { localStorage.setItem(KEY, "1"); bar.remove(); });
   }
 
-  /* ── state helpers ── */
+  /* state helpers */
   function normalizeState(s) {
     s.ui = Object.assign(
       { showTranslationByDefault: false, showPhoneticByDefault: false,
@@ -320,8 +316,8 @@
     s.song = s.song || {};
     s.song.media = s.song.media || {};
     if (!Array.isArray(s.items)) s.items = [];
-    s.items.forEach((it, i) => {
-      if (!it.id) it.id = `${s.song.id || "line"}-${String(i + 1).padStart(3, "0")}`;
+    s.items.forEach(function(it, i) {
+      if (!it.id) it.id = (s.song.id || "line") + "-" + String(i + 1).padStart(3, "0");
       if (!("start" in it))    it.start = null;
       if (!("end" in it))      it.end   = null;
       if (typeof it.learned    !== "boolean") it.learned = false;
@@ -331,13 +327,13 @@
   }
 
   function mergeProgress(remote, local) {
-    const out = structuredClone(remote);
-    if (local?.ui) out.ui = Object.assign({}, out.ui || {}, local.ui);
-    const m = new Map((local.items || []).map(x => [x.id, x]));
-    (out.items || []).forEach(it => {
-      const l = m.get(it.id); if (!l) return;
-      it.start   = l.start ?? it.start ?? null;
-      it.end     = l.end   ?? it.end   ?? null;
+    var out = structuredClone(remote);
+    if (local && local.ui) out.ui = Object.assign({}, out.ui || {}, local.ui);
+    var m = new Map((local.items || []).map(function(x) { return [x.id, x]; }));
+    (out.items || []).forEach(function(it) {
+      var l = m.get(it.id); if (!l) return;
+      it.start   = l.start != null ? l.start : (it.start != null ? it.start : null);
+      it.end     = l.end != null ? l.end : (it.end != null ? it.end : null);
       it.learned = typeof l.learned === "boolean" ? l.learned : it.learned;
       if (l.phonetic_user) it.phonetic_user = l.phonetic_user;
     });
@@ -349,76 +345,74 @@
       || document.documentElement.dataset.songJson || null;
   }
   function slugToUrl(slug) {
-    return slug.includes("/") ? slug : `data/songs/${slug}.json`;
+    return slug.indexOf("/") !== -1 ? slug : "data/songs/" + slug + ".json";
   }
 
-  /* ══════════════════════════════════════
-     SONG PAGE
-     ══════════════════════════════════════ */
+  /* SONG PAGE */
   async function bootSongPage() {
-    const slug = getSongSlug();
+    var slug = getSongSlug();
     if (!slug) return;
 
-    const JSON_URL = slugToUrl(slug);
-    const PREFIX   = "lyricear_v1::";
+    var JSON_URL = slugToUrl(slug);
+    var PREFIX   = "lyricear_v1::";
 
-    let state;
+    var state;
     try {
-      const remote = await fetchJson(JSON_URL);
-      const key    = PREFIX + (remote.song?.id || slug);
-      const raw    = localStorage.getItem(key);
-      const local  = raw ? JSON.parse(raw) : null;
+      var remote = await fetchJson(JSON_URL);
+      var key    = PREFIX + (remote.song && remote.song.id ? remote.song.id : slug);
+      var raw    = localStorage.getItem(key);
+      var local  = raw ? JSON.parse(raw) : null;
       state = local ? mergeProgress(remote, local) : remote;
       state._storageKey = key;
     } catch (e) { toast("Не удалось загрузить песню", String(e)); return; }
     normalizeState(state);
-    const songId = state.song?.id || slug;
-    if (state.song?.title) document.title = `${state.song.title} — LyricEar`;
+    var songId = (state.song && state.song.id) ? state.song.id : slug;
+    if (state.song && state.song.title) document.title = state.song.title + " — LyricEar";
 
-    /* ── DOM refs ── */
-    const player         = $("#player");
-    const videoWrap      = $("#videoWrap");
-    const btnPlayOverlay = $("#btnPlayOverlay");
-    const mediaPick      = $("#mediaPick");
-    const btnLoadLocal   = $("#btnLoadLocal");
-    const btnLoadYaDisk  = $("#btnLoadYaDisk");
-    const btnForgetMedia = $("#btnForgetMedia");
-    const mediaName      = $("#mediaName");
-    const lamp           = $("#mediaLamp");
-    const elNow          = $("#tNow");
-    const btnPlay        = $("#btnPlay");
-    const playProgress   = $("#playProgress");
-    const playTime       = $("#playTime");
-    const btnPlaySeg     = $("#btnPlaySeg");
-    const btnStart       = $("#btnStart");
-    const btnEnd         = $("#btnEnd");
-    const btnClear       = $("#btnClear");
-    const loopToggle     = $("#loopToggle");
-    const autoNextToggle = $("#autoNextToggle");
-    const globalShowOrig  = $("#globalShowOrig");
-    const globalShowTrans = $("#globalShowTrans");
-    const globalShowPhon  = $("#globalShowPhon");
-    const globalShowWhy   = $("#globalShowWhy");
-    const linesHost       = $("#lines");
-    const saveIndicator   = $("#saveIndicator");
+    /* DOM refs */
+    var player         = $("#player");
+    var videoWrap      = $("#videoWrap");
+    var btnPlayOverlay = $("#btnPlayOverlay");
+    var mediaPick      = $("#mediaPick");
+    var btnLoadLocal   = $("#btnLoadLocal");
+    var btnLoadYaDisk  = $("#btnLoadYaDisk");
+    var btnForgetMedia = $("#btnForgetMedia");
+    var mediaName      = $("#mediaName");
+    var lamp           = $("#mediaLamp");
+    var elNow          = $("#tNow");
+    var btnPlay        = $("#btnPlay");
+    var playProgress   = $("#playProgress");
+    var playTime       = $("#playTime");
+    var btnPlaySeg     = $("#btnPlaySeg");
+    var btnStart       = $("#btnStart");
+    var btnEnd         = $("#btnEnd");
+    var btnClear       = $("#btnClear");
+    var loopToggle     = $("#loopToggle");
+    var autoNextToggle = $("#autoNextToggle");
+    var globalShowOrig  = $("#globalShowOrig");
+    var globalShowTrans = $("#globalShowTrans");
+    var globalShowPhon  = $("#globalShowPhon");
+    var globalShowWhy   = $("#globalShowWhy");
+    var linesHost       = $("#lines");
+    var saveIndicator   = $("#saveIndicator");
 
-    const specCanvas  = $("#spectrogramCanvas");
-    const specWrap    = $("#spectrogramWrap");
-    const specToggle  = $("#spectrogramToggle");
-    const specZoomIn  = $("#specZoomIn");
-    const specZoomOut = $("#specZoomOut");
-    const specZoomLbl = $("#specZoomLabel");
+    var specCanvas  = $("#spectrogramCanvas");
+    var specWrap    = $("#spectrogramWrap");
+    var specToggle  = $("#spectrogramToggle");
+    var specZoomIn  = $("#specZoomIn");
+    var specZoomOut = $("#specZoomOut");
+    var specZoomLbl = $("#specZoomLabel");
 
-    let spec = null;
-    let activeIndex = 0;
-    let loopTimer   = null;
+    var spec = null;
+    var activeIndex = 0;
+    var loopTimer   = null;
 
     /* header */
     function applyHeader() {
-      const t = $("#songTitle");  if (t) t.textContent = state.song?.title  || "—";
-      const a = $("#songArtist"); if (a) a.textContent = state.song?.artist || "—";
-      const l = $("#songLang");   if (l) l.textContent = state.song?.languageName || state.song?.language || "—";
-      const h = $("#songHint");   if (h) h.textContent = state.song?.hint   || "";
+      var t = $("#songTitle");  if (t) t.textContent = (state.song && state.song.title)  || "—";
+      var a = $("#songArtist"); if (a) a.textContent = (state.song && state.song.artist) || "—";
+      var l = $("#songLang");   if (l) l.textContent = (state.song && (state.song.languageName || state.song.language)) || "—";
+      var h = $("#songHint");   if (h) h.textContent = (state.song && state.song.hint)   || "";
     }
     applyHeader();
 
@@ -443,20 +437,20 @@
     showForgetBtn(false);
 
     /* save */
-    let saveT = null;
+    var saveT = null;
     function save() {
       clearTimeout(saveT);
-      saveT = setTimeout(() => {
-        try { localStorage.setItem(state._storageKey, JSON.stringify(state)); } catch {}
+      saveT = setTimeout(function() {
+        try { localStorage.setItem(state._storageKey, JSON.stringify(state)); } catch(e) {}
         if (saveIndicator) {
           saveIndicator.classList.add("flash");
-          setTimeout(() => saveIndicator.classList.remove("flash"), 600);
+          setTimeout(function() { saveIndicator.classList.remove("flash"); }, 600);
         }
       }, 300);
     }
 
     /* media type */
-    const VID_RE = /\.(mp4|mkv|webm|avi|mov|m4v|ogv)$/i;
+    var VID_RE = /\.(mp4|mkv|webm|avi|mov|m4v|ogv)$/i;
     function isVideo(name, mime) {
       if (mime && mime.startsWith("video/")) return true;
       return VID_RE.test(name);
@@ -469,33 +463,33 @@
     }
     applyMode(false);
 
-    /* ── Play overlay on video ── */
+    /* Play overlay */
     function syncOverlay() {
       if (!btnPlayOverlay || !videoWrap) return;
       if (player.paused) videoWrap.classList.add("paused");
       else videoWrap.classList.remove("paused");
-      btnPlayOverlay.textContent = player.paused ? "▶" : "⏸";
+      btnPlayOverlay.textContent = player.paused ? "\u25B6" : "\u23F8";
     }
 
     if (btnPlayOverlay) {
-      btnPlayOverlay.addEventListener("click", (e) => {
+      btnPlayOverlay.addEventListener("click", function(e) {
         e.stopPropagation();
         if (!player.src && !player.currentSrc) { toast("Сначала выберите файл"); return; }
-        if (player.paused) player.play().catch(() => {});
+        if (player.paused) player.play().catch(function(){});
         else player.pause();
       });
     }
 
     if (videoWrap) {
-      videoWrap.addEventListener("click", (e) => {
+      videoWrap.addEventListener("click", function(e) {
         if (e.target.closest("button")) return;
         if (!player.src && !player.currentSrc) return;
-        if (player.paused) player.play().catch(() => {});
+        if (player.paused) player.play().catch(function(){});
         else player.pause();
       });
     }
 
-    /* ── Spectrogram helpers ── */
+    /* Spectrogram helpers */
     function ensureSpec() {
       if (!spec && specCanvas) {
         spec = createSpectrogram(specCanvas, player);
@@ -510,8 +504,8 @@
 
     /* load blob */
     async function loadBlob(blob, name, mime, src, persist) {
-      if (player._url) try { URL.revokeObjectURL(player._url); } catch {}
-      const url = URL.createObjectURL(blob);
+      if (player._url) try { URL.revokeObjectURL(player._url); } catch(e) {}
+      var url = URL.createObjectURL(blob);
       player._url = url;
       applyMode(isVideo(name, mime));
       player.src = url;
@@ -522,89 +516,89 @@
       if (btnLoadLocal) btnLoadLocal.classList.remove("pulse");
       ensureSpec();
       if (persist) {
-        const ok = await idbSave(songId, blob, name, mime);
-        toast(ok ? "💾 Файл сохранён в кэш" : "▶ Файл открыт", name);
+        var ok = await idbSave(songId, blob, name, mime);
+        toast(ok ? "Файл сохранён в кэш" : "Файл открыт", name);
       }
     }
 
     /* restore from IDB */
     async function tryRestore() {
-      const c = await idbLoad(songId);
+      var c = await idbLoad(songId);
       if (!c || !c.blob) return false;
       await loadBlob(c.blob, c.name, c.type, "cached", false);
-      toast("📦 Медиа из кэша", c.name);
+      toast("Медиа из кэша", c.name);
       return true;
     }
 
     /* local file */
     if (btnLoadLocal && mediaPick) {
-      btnLoadLocal.addEventListener("click", () => mediaPick.click());
-      mediaPick.addEventListener("change", () => {
-        const f = mediaPick.files?.[0];
+      btnLoadLocal.addEventListener("click", function() { mediaPick.click(); });
+      mediaPick.addEventListener("change", function() {
+        var f = mediaPick.files && mediaPick.files[0];
         if (f) loadBlob(f, f.name, f.type, "local", true);
       });
     }
 
     /* forget */
     if (btnForgetMedia) {
-      btnForgetMedia.addEventListener("click", async () => {
+      btnForgetMedia.addEventListener("click", async function() {
         if (!confirm("Удалить медиа из кэша?")) return;
         await idbDelete(songId);
-        if (player._url) try { URL.revokeObjectURL(player._url); } catch {}
+        if (player._url) try { URL.revokeObjectURL(player._url); } catch(e) {}
         player.removeAttribute("src"); player.load();
         applyMode(false); setLamp("none"); showMediaN(""); showForgetBtn(false);
         if (spec) { spec.stop(); spec.clear(); }
-        toast("🗑 Медиа удалено");
+        toast("Медиа удалено");
       });
     }
 
     /* YaDisk */
     if (btnLoadYaDisk) {
-      const yd = state.song?.media?.yadisk;
+      var yd = state.song && state.song.media && state.song.media.yadisk;
       if (!yd) { btnLoadYaDisk.style.display = "none"; }
       else {
-        btnLoadYaDisk.addEventListener("click", () => {
+        btnLoadYaDisk.addEventListener("click", function() {
           window.open(yd, "yadisk", "width=700,height=500");
           if (btnLoadLocal) btnLoadLocal.classList.add("pulse");
-          toast("📥 Скачайте и откройте через «📁 Файл»");
+          toast("Скачайте и откройте через Файл");
         });
       }
     }
 
-    /* ── play / pause ── */
+    /* play / pause */
     function fmtTime(t) {
       if (!Number.isFinite(t)) return "0:00";
-      const m = Math.floor(t / 60);
-      const s = Math.floor(t % 60);
+      var m = Math.floor(t / 60);
+      var s = Math.floor(t % 60);
       return m + ":" + String(s).padStart(2, "0");
     }
 
     if (btnPlay) {
-      btnPlay.addEventListener("click", () => {
+      btnPlay.addEventListener("click", function() {
         if (!player.src && !player.currentSrc) { toast("Сначала выберите файл"); return; }
-        if (player.paused) player.play().catch(() => {});
+        if (player.paused) player.play().catch(function(){});
         else player.pause();
       });
     }
-    player.addEventListener("play",  () => {
-      if (btnPlay) btnPlay.textContent = "⏸";
+    player.addEventListener("play",  function() {
+      if (btnPlay) btnPlay.textContent = "\u23F8";
       syncOverlay();
       specStart();
     });
-    player.addEventListener("pause", () => {
-      if (btnPlay) btnPlay.textContent = "▶";
+    player.addEventListener("pause", function() {
+      if (btnPlay) btnPlay.textContent = "\u25B6";
       syncOverlay();
       specStop();
     });
-    player.addEventListener("ended", () => {
-      if (btnPlay) btnPlay.textContent = "▶";
+    player.addEventListener("ended", function() {
+      if (btnPlay) btnPlay.textContent = "\u25B6";
       syncOverlay();
       specStop();
     });
-    player.addEventListener("seeked", () => { if (!player.paused) specClear(); });
+    player.addEventListener("seeked", function() { if (!player.paused) specClear(); });
 
-    /* progress bar & time */
-    player.addEventListener("timeupdate", () => {
+    /* progress bar */
+    player.addEventListener("timeupdate", function() {
       if (elNow) elNow.textContent = (player.currentTime || 0).toFixed(2) + "s";
       if (playProgress && player.duration)
         playProgress.value = (player.currentTime / player.duration * 1000).toFixed(0);
@@ -612,30 +606,30 @@
         playTime.textContent = fmtTime(player.currentTime) + "/" + fmtTime(player.duration);
     });
     if (playProgress) {
-      playProgress.addEventListener("input", () => {
+      playProgress.addEventListener("input", function() {
         if (player.duration) player.currentTime = (playProgress.value / 1000) * player.duration;
       });
     }
 
-    player.addEventListener("loadedmetadata", () => {
+    player.addEventListener("loadedmetadata", function() {
       if (btnStart) btnStart.disabled = false;
       if (btnEnd)   btnEnd.disabled   = false;
       renderSegStatus();
       syncOverlay();
     });
-    player.addEventListener("loadeddata", () => {
+    player.addEventListener("loadeddata", function() {
       if (btnLoadLocal) btnLoadLocal.classList.remove("pulse");
       if (player.videoHeight > 0) applyMode(true);
     });
-    player.addEventListener("error", () => { toast("Ошибка медиа"); setLamp("none"); });
+    player.addEventListener("error", function() { toast("Ошибка медиа"); setLamp("none"); });
 
     /* spectrogram UI */
     if (specToggle && specWrap) {
-      specToggle.addEventListener("click", () => {
-        const c = specWrap.classList.toggle("collapsed");
-        specToggle.textContent = c ? "📊 Спектрограмма ▸" : "📊 Спектрограмма ▾";
+      specToggle.addEventListener("click", function() {
+        var c = specWrap.classList.toggle("collapsed");
+        specToggle.textContent = c ? "Спектрограмма >" : "Спектрограмма v";
         if (!c) {
-          setTimeout(() => {
+          setTimeout(function() {
             if (spec) spec.resetCanvas();
             if (spec && !player.paused) {
               spec.ensureAudio();
@@ -647,52 +641,54 @@
         }
       });
     }
-    function updateZL() { if (specZoomLbl && spec) specZoomLbl.textContent = `×${spec.getZoom()}`; }
-    if (specZoomIn)  specZoomIn.addEventListener("click",  () => { if (spec) { spec.zoomIn();  updateZL(); } });
-    if (specZoomOut) specZoomOut.addEventListener("click", () => { if (spec) { spec.zoomOut(); updateZL(); } });
+    function updateZL() { if (specZoomLbl && spec) specZoomLbl.textContent = "x" + spec.getZoom(); }
+    if (specZoomIn)  specZoomIn.addEventListener("click",  function() { if (spec) { spec.zoomIn();  updateZL(); } });
+    if (specZoomOut) specZoomOut.addEventListener("click", function() { if (spec) { spec.zoomOut(); updateZL(); } });
 
-    /* ── segment controls ── */
+    /* segment controls */
     function renderSegStatus() {
-      const el = $("#segStatus"); if (!el) return;
-      const it = state.items[activeIndex];
-      const s = it?.start, e = it?.end;
+      var el = $("#segStatus"); if (!el) return;
+      var it = state.items[activeIndex];
+      var s = it ? it.start : null;
+      var e = it ? it.end : null;
       el.innerHTML =
-        `<span class="pill">Строка: <span class="mono">${activeIndex + 1}/${state.items.length}</span></span>
-         <span class="pill">Start: <span class="mono">${s == null ? "—" : Number(s).toFixed(2)}</span></span>
-         <span class="pill">End: <span class="mono">${e == null ? "—" : Number(e).toFixed(2)}</span></span>
-         <span class="pill">${it?.learned ? "✓ выучено" : "… в работе"}</span>`;
-      const ready = s != null && e != null && Number(e) > Number(s);
+        '<span class="pill">Строка: <span class="mono">' + (activeIndex + 1) + '/' + state.items.length + '</span></span>' +
+        '<span class="pill">Start: <span class="mono">' + (s == null ? "—" : Number(s).toFixed(2)) + '</span></span>' +
+        '<span class="pill">End: <span class="mono">' + (e == null ? "—" : Number(e).toFixed(2)) + '</span></span>' +
+        '<span class="pill">' + (it && it.learned ? "learned" : "...") + '</span>';
+      var ready = s != null && e != null && Number(e) > Number(s);
       if (btnPlaySeg) btnPlaySeg.disabled = !ready;
       if (btnClear)   btnClear.disabled   = !(s != null || e != null);
-      if (btnStart)   btnStart.disabled   = !(player?.readyState >= 1);
-      if (btnEnd)     btnEnd.disabled     = !(player?.readyState >= 1);
+      if (btnStart)   btnStart.disabled   = !(player && player.readyState >= 1);
+      if (btnEnd)     btnEnd.disabled     = !(player && player.readyState >= 1);
     }
 
     function stopLoop() { if (loopTimer) { clearInterval(loopTimer); loopTimer = null; } }
 
     function playSegment() {
-      const it = state.items[activeIndex];
-      const s = it?.start, e = it?.end;
+      var it = state.items[activeIndex];
+      var s = it ? it.start : null;
+      var e = it ? it.end : null;
       if (!(s != null && e != null && Number(e) > Number(s))) { toast("Нужны Start и End"); return; }
       stopLoop();
       player.currentTime = Number(s);
       specClear();
-      player.play().catch(() => {});
+      player.play().catch(function(){});
 
-      loopTimer = setInterval(() => {
+      loopTimer = setInterval(function() {
         if (!player || player.paused) return;
         if (player.currentTime >= Number(e) - 0.03) {
-          if (loopToggle?.checked) {
+          if (loopToggle && loopToggle.checked) {
             player.currentTime = Number(s);
             specClear();
           } else {
             stopLoop(); player.pause();
-            if (autoNextToggle?.checked) {
-              const nx = Math.min(activeIndex + 1, state.items.length - 1);
+            if (autoNextToggle && autoNextToggle.checked) {
+              var nx = Math.min(activeIndex + 1, state.items.length - 1);
               if (nx !== activeIndex) {
                 setActive(nx, true);
-                const ni = state.items[nx];
-                if (ni?.start != null && ni?.end != null && Number(ni.end) > Number(ni.start))
+                var ni = state.items[nx];
+                if (ni && ni.start != null && ni.end != null && Number(ni.end) > Number(ni.start))
                   setTimeout(playSegment, 120);
               }
             }
@@ -703,20 +699,20 @@
 
     if (btnPlaySeg) btnPlaySeg.addEventListener("click", playSegment);
 
-    if (btnStart) btnStart.addEventListener("click", () => {
-      const it = state.items[activeIndex];
+    if (btnStart) btnStart.addEventListener("click", function() {
+      var it = state.items[activeIndex];
       it.start = Number(player.currentTime.toFixed(2));
       if (it.end != null && Number(it.end) <= Number(it.start)) it.end = null;
       save(); renderLines();
     });
-    if (btnEnd) btnEnd.addEventListener("click", () => {
-      const it = state.items[activeIndex];
+    if (btnEnd) btnEnd.addEventListener("click", function() {
+      var it = state.items[activeIndex];
       it.end = Number(player.currentTime.toFixed(2));
-      if (it.start != null && Number(it.end) <= Number(it.start)) { toast("End ≤ Start"); it.end = null; }
+      if (it.start != null && Number(it.end) <= Number(it.start)) { toast("End <= Start"); it.end = null; }
       save(); renderLines();
     });
-    if (btnClear) btnClear.addEventListener("click", () => {
-      const it = state.items[activeIndex];
+    if (btnClear) btnClear.addEventListener("click", function() {
+      var it = state.items[activeIndex];
       it.start = null; it.end = null;
       save(); renderLines();
     });
@@ -725,17 +721,17 @@
     function setActive(idx, seek) {
       activeIndex = Math.max(0, Math.min(idx, state.items.length - 1));
       renderLines();
-      const it = state.items[activeIndex];
-      if (seek && it?.start != null && Number.isFinite(it.start))
+      var it = state.items[activeIndex];
+      if (seek && it && it.start != null && Number.isFinite(it.start))
         player.currentTime = Math.max(0, Number(it.start));
     }
 
     /* render lines */
     function renderLines() {
-      const sO = globalShowOrig?.checked  || false;
-      const sT = globalShowTrans?.checked || false;
-      const sP = globalShowPhon?.checked  || false;
-      const sW = globalShowWhy?.checked   || false;
+      var sO = globalShowOrig  && globalShowOrig.checked  || false;
+      var sT = globalShowTrans && globalShowTrans.checked || false;
+      var sP = globalShowPhon  && globalShowPhon.checked  || false;
+      var sW = globalShowWhy   && globalShowWhy.checked   || false;
       state.ui.showOriginalByDefault    = sO;
       state.ui.showTranslationByDefault = sT;
       state.ui.showPhoneticByDefault    = sP;
@@ -743,66 +739,66 @@
 
       linesHost.innerHTML = "";
 
-      state.items.forEach((it, idx) => {
-        const isAct = idx === activeIndex;
-        const hasT  = it.start != null && it.end != null && Number(it.end) > Number(it.start);
+      state.items.forEach(function(it, idx) {
+        var isAct = idx === activeIndex;
+        var hasT  = it.start != null && it.end != null && Number(it.end) > Number(it.start);
 
-        const line = document.createElement("div");
+        var line = document.createElement("div");
         line.className = "line" + (isAct ? " active" : "") + (it.learned ? " learned" : "");
 
-        const hdr = document.createElement("div"); hdr.className = "line-header";
-        const num = document.createElement("span"); num.className = "line-num"; num.textContent = idx + 1;
-        const inp = document.createElement("input");
-        inp.type = "text"; inp.className = "user-heard"; inp.placeholder = "Как услышал(а)…";
+        var hdr = document.createElement("div"); hdr.className = "line-header";
+        var num = document.createElement("span"); num.className = "line-num"; num.textContent = idx + 1;
+        var inp = document.createElement("input");
+        inp.type = "text"; inp.className = "user-heard"; inp.placeholder = "Как услышал(а)...";
         inp.value = it.phonetic_user || "";
-        inp.addEventListener("input", () => { it.phonetic_user = inp.value; save(); });
-        inp.addEventListener("click", e => e.stopPropagation());
+        inp.addEventListener("input", function() { it.phonetic_user = inp.value; save(); });
+        inp.addEventListener("click", function(e) { e.stopPropagation(); });
         hdr.appendChild(num); hdr.appendChild(inp);
 
-        const origRow = document.createElement("div"); origRow.className = "orig-row";
-        let revealed = sO;
-        const origTxt = document.createElement("span"); origTxt.className = "orig-text";
+        var origRow = document.createElement("div"); origRow.className = "orig-row";
+        var revealed = sO;
+        var origTxt = document.createElement("span"); origTxt.className = "orig-text";
         origTxt.textContent = it.text || "—"; origTxt.style.display = revealed ? "inline" : "none";
-        const btnR = document.createElement("button"); btnR.className = "tiny btn-reveal";
-        btnR.textContent = revealed ? "👁 Скрыть" : "👁 Показать";
-        btnR.addEventListener("click", e => {
+        var btnR = document.createElement("button"); btnR.className = "tiny btn-reveal";
+        btnR.textContent = revealed ? "Скрыть" : "Показать";
+        btnR.addEventListener("click", function(e) {
           e.stopPropagation(); revealed = !revealed;
           origTxt.style.display = revealed ? "inline" : "none";
-          btnR.textContent = revealed ? "👁 Скрыть" : "👁 Показать";
+          btnR.textContent = revealed ? "Скрыть" : "Показать";
         });
         origRow.appendChild(btnR); origRow.appendChild(origTxt);
 
-        const phonRow  = document.createElement("div");
+        var phonRow  = document.createElement("div");
         phonRow.className = "sub sub-phon" + (sP ? " visible" : "");
-        if (it.phonetic) phonRow.innerHTML = `<div class="subCard"><b>👂</b> <span class="mono phon-author">${esc(it.phonetic)}</span></div>`;
+        if (it.phonetic) phonRow.innerHTML = '<div class="subCard"><b>ear</b> <span class="mono phon-author">' + esc(it.phonetic) + '</span></div>';
 
-        const transRow = document.createElement("div");
+        var transRow = document.createElement("div");
         transRow.className = "sub sub-trans" + (sT ? " visible" : "");
-        if (it.translation) transRow.innerHTML = `<div class="subCard"><span class="muted">Перевод:</span> ${esc(it.translation)}</div>`;
+        if (it.translation) transRow.innerHTML = '<div class="subCard"><span class="muted">Перевод:</span> ' + esc(it.translation) + '</div>';
 
-        const whyRow = document.createElement("div");
+        var whyRow = document.createElement("div");
         whyRow.className = "sub sub-why" + (sW ? " visible" : "");
         if (it.why) {
-          const conf = typeof it.confidence === "number"
-            ? ` <span class="pill">≈${(clamp01(it.confidence)*100).toFixed(0)}%</span>` : "";
-          whyRow.innerHTML = `<div class="subCard"><b>🧠</b>${conf}<div style="margin-top:4px">${esc(it.why)}</div></div>`;
+          var conf = typeof it.confidence === "number"
+            ? ' <span class="pill">~' + (clamp01(it.confidence)*100).toFixed(0) + '%</span>' : "";
+          whyRow.innerHTML = '<div class="subCard"><b>brain</b>' + conf + '<div style="margin-top:4px">' + esc(it.why) + '</div></div>';
         }
 
-        const acts = document.createElement("div"); acts.className = "line-actions";
+        var acts = document.createElement("div"); acts.className = "line-actions";
         function mb(t, c, fn) {
-          const b = document.createElement("button");
+          var b = document.createElement("button");
           b.className = c; b.textContent = t;
-          b.addEventListener("click", e => { e.stopPropagation(); fn(); });
+          b.addEventListener("click", function(e) { e.stopPropagation(); fn(); });
           return b;
         }
-        acts.appendChild(mb("Выбрать", "tiny btn-primary", () => setActive(idx, true)));
-        if (hasT) acts.appendChild(mb("▶", "tiny", () => { setActive(idx, false); playSegment(); }));
-        if (it.phonetic) acts.appendChild(mb("👂", "tiny", () => phonRow.classList.toggle("visible")));
-        acts.appendChild(mb("💬", "tiny", () => transRow.classList.toggle("visible")));
-        if (it.why) acts.appendChild(mb("🧠", "tiny", () => whyRow.classList.toggle("visible")));
-        acts.appendChild(mb(it.learned ? "✓ Выучено" : "Выучено",
+        acts.appendChild(mb("Sel", "tiny btn-primary", function() { setActive(idx, true); }));
+        if (hasT) acts.appendChild(mb("Play", "tiny", function() { setActive(idx, false); playSegment(); }));
+        if (it.phonetic) acts.appendChild(mb("ear", "tiny", function() { phonRow.classList.toggle("visible"); }));
+        acts.appendChild(mb("trans", "tiny", function() { transRow.classList.toggle("visible"); }));
+        if (it.why) acts.appendChild(mb("why", "tiny", function() { whyRow.classList.toggle("visible"); }));
+        acts.appendChild(mb(it.learned ? "Done" : "Learn",
           "tiny " + (it.learned ? "btn-good" : ""),
-          () => { it.learned = !it.learned; save(); renderLines(); }));
+          function() { it.learned = !it.learned; save(); renderLines(); }));
 
         line.appendChild(hdr);
         line.appendChild(origRow);
@@ -810,7 +806,7 @@
         line.appendChild(transRow);
         line.appendChild(whyRow);
         line.appendChild(acts);
-        line.addEventListener("click", () => setActive(idx, true));
+        line.addEventListener("click", function() { setActive(idx, true); });
         linesHost.appendChild(line);
       });
 
@@ -819,16 +815,16 @@
     }
 
     /* reset */
-    const btnReset = $("#btnResetProgress");
+    var btnReset = $("#btnResetProgress");
     if (btnReset) {
-      btnReset.addEventListener("click", async () => {
+      btnReset.addEventListener("click", async function() {
         if (!confirm("Сбросить прогресс?")) return;
         try {
-          const r = await fetchJson(JSON_URL);
-          const k = state._storageKey;
+          var r = await fetchJson(JSON_URL);
+          var k = state._storageKey;
           state = r; state._storageKey = k;
           normalizeState(state); save(); applyHeader(); setActive(0, false);
-          toast("✅ Прогресс сброшен");
+          toast("Прогресс сброшен");
         } catch (e) { toast("Ошибка", String(e)); }
       });
     }
@@ -838,7 +834,7 @@
     if (globalShowTrans) globalShowTrans.checked = !!state.ui.showTranslationByDefault;
     if (globalShowPhon)  globalShowPhon.checked  = !!state.ui.showPhoneticByDefault;
     if (globalShowWhy)   globalShowWhy.checked   = !!state.ui.showWhyHeardByDefault;
-    [globalShowOrig, globalShowTrans, globalShowPhon, globalShowWhy].forEach(el => {
+    [globalShowOrig, globalShowTrans, globalShowPhon, globalShowWhy].forEach(function(el) {
       if (el) el.addEventListener("change", renderLines);
     });
 
@@ -847,58 +843,56 @@
     setActive(0, false);
 
     /* restore media */
-    tryRestore().then(ok => {
+    tryRestore().then(function(ok) {
       if (!ok && btnLoadLocal) btnLoadLocal.classList.add("pulse");
     });
 
     /* keyboard */
-    document.addEventListener("keydown", e => {
-      const tag = (e.target.tagName || "").toLowerCase();
+    document.addEventListener("keydown", function(e) {
+      var tag = (e.target.tagName || "").toLowerCase();
       if (tag === "input" || tag === "textarea") return;
-      const k = e.key.toLowerCase();
-      if (k === " ")  { e.preventDefault(); player.paused ? player.play().catch(()=>{}) : player.pause(); }
+      var k = e.key.toLowerCase();
+      if (k === " ")  { e.preventDefault(); player.paused ? player.play().catch(function(){}) : player.pause(); }
       if (k === "s")  { e.preventDefault(); if (btnStart) btnStart.click(); }
-      if (k === "e")  { e.preventDefault(); if (btnEnd) btnEnd.click(); const nx = Math.min(activeIndex+1, state.items.length-1); if (nx !== activeIndex) setTimeout(() => setActive(nx, false), 100); }
+      if (k === "e")  { e.preventDefault(); if (btnEnd) btnEnd.click(); var nx = Math.min(activeIndex+1, state.items.length-1); if (nx !== activeIndex) setTimeout(function() { setActive(nx, false); }, 100); }
       if (k === "arrowdown" || k === "n") { e.preventDefault(); setActive(Math.min(activeIndex+1, state.items.length-1), false); }
       if (k === "arrowup"   || k === "p") { e.preventDefault(); setActive(Math.max(activeIndex-1, 0), false); }
       if (k === "r")  { e.preventDefault(); playSegment(); }
     });
 
-    toast("⌨ S/E=метки, Space=play, ↑↓=строки, R=фрагмент");
+    toast("S/E=marks, Space=play, arrows=lines, R=segment");
   }
 
-  /* ══════════════════════════════════════
-     HOME PAGE
-     ══════════════════════════════════════ */
+  /* HOME PAGE */
   async function bootHome() {
-    const root = document.documentElement;
+    var root = document.documentElement;
     if (!root.dataset.catalog) return;
-    const list = $("#songsList"), langSel = $("#langFilter"), search = $("#q");
-    let catalog;
+    var list = $("#songsList"), langSel = $("#langFilter"), search = $("#q");
+    var catalog;
     try { catalog = await fetchJson(root.dataset.catalog); } catch (e) { toast("Каталог не загружен", String(e)); return; }
-    const songs = catalog.songs || [], langs = catalog.languages || [];
+    var songs = catalog.songs || [], langs = catalog.languages || [];
     if (langSel) {
-      langSel.innerHTML = `<option value="">Все языки</option>` +
-        langs.map(l => `<option value="${esc(l.code)}">${esc(l.name)}</option>`).join("");
+      langSel.innerHTML = '<option value="">Все языки</option>' +
+        langs.map(function(l) { return '<option value="' + esc(l.code) + '">' + esc(l.name) + '</option>'; }).join("");
     }
     function render() {
-      const q    = (search?.value || "").trim().toLowerCase();
-      const lang = langSel?.value || "";
-      const f = songs.filter(s => {
-        const okL = !lang || s.language === lang;
-        const hay = `${s.title} ${s.artist} ${s.languageName || ""}`.toLowerCase();
-        return okL && (!q || hay.includes(q));
+      var q    = (search && search.value || "").trim().toLowerCase();
+      var lang = (langSel && langSel.value) || "";
+      var f = songs.filter(function(s) {
+        var okL = !lang || s.language === lang;
+        var hay = (s.title + " " + s.artist + " " + (s.languageName || "")).toLowerCase();
+        return okL && (!q || hay.indexOf(q) !== -1);
       });
-      const c = $("#count"); if (c) c.textContent = f.length;
+      var c = $("#count"); if (c) c.textContent = f.length;
       if (!list) return;
       list.innerHTML = "";
-      f.forEach(s => {
-        const a = document.createElement("a"); a.className = "songCard"; a.href = s.url;
+      f.forEach(function(s) {
+        var a = document.createElement("a"); a.className = "songCard"; a.href = s.url;
         a.innerHTML =
-          `<div class="songTitle">${esc(s.title)}</div>` +
-          `<div class="songMeta"><span class="pill">👤 ${esc(s.artist||"—")}</span>` +
-          `<span class="pill">🌍 ${esc(s.languageName||s.language||"—")}</span></div>` +
-          `<div class="songSmall">${esc(s.short||"")}</div>`;
+          '<div class="songTitle">' + esc(s.title) + '</div>' +
+          '<div class="songMeta"><span class="pill">' + esc(s.artist||"—") + '</span>' +
+          '<span class="pill">' + esc(s.languageName||s.language||"—") + '</span></div>' +
+          '<div class="songSmall">' + esc(s.short||"") + '</div>';
         list.appendChild(a);
       });
     }
@@ -907,24 +901,21 @@
     render();
   }
 
-  /* ══════════════════════════════════════
-     BOOT
-     ══════════════════════════════════════ */
-  window.addEventListener("DOMContentLoaded", async () => {
+  /* BOOT */
+  window.addEventListener("DOMContentLoaded", async function() {
     showStorageConsent();
 
-    /* ── Logo auto-hide/show on scroll ── */
-    (function(){
-      const logo = document.getElementById("logoBar");
-      if (!logo) return;
-      let lastY = 0;
-      window.addEventListener("scroll", () => {
-        const y = window.scrollY;
+    /* Logo auto-hide on scroll */
+    var logo = document.getElementById("logoBar");
+    if (logo) {
+      var lastY = 0;
+      window.addEventListener("scroll", function() {
+        var y = window.scrollY;
         if (y > lastY && y > 60) logo.classList.add("hidden");
         else logo.classList.remove("hidden");
         lastY = y;
       }, { passive: true });
-    })();
+    }
 
     try { await bootSongPage(); } catch(e) { console.error("bootSongPage error:", e); }
     try { await bootHome(); }     catch(e) { console.error("bootHome error:", e); }
