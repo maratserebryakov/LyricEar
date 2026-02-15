@@ -4,10 +4,51 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>LyricEar — Плеер</title>
-  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/styles.css?v=5" />
 </head>
 <body>
   <div id="toast" class="toast"></div>
+
+  <!-- ═══ Logo ═══ -->
+  <div id="logoBar" class="logo-bar">
+    <a href="index.html" class="logo-link">
+      <svg class="logo-svg" width="36" height="36" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="96" stroke="url(#rim)" stroke-width="3" fill="#0e0b1a"/>
+        <ellipse cx="100" cy="174" rx="42" ry="4" fill="#7c3aed" fill-opacity=".18"/>
+        <path d="M60 140 Q72 60,100 44 Q128 60,140 140" stroke="url(#au1)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M68 142 Q78 75,100 56 Q122 75,132 142" stroke="url(#au2)" stroke-width="2.5" fill="none" opacity=".55" stroke-linecap="round"/>
+        <path d="M76 144 Q84 90,100 68 Q116 90,124 144" stroke="url(#au3)" stroke-width="1.5" fill="none" opacity=".35" stroke-linecap="round"/>
+        <circle cx="100" cy="42" r="5" fill="#f0abfc" opacity=".9"/>
+        <circle cx="100" cy="42" r="9" fill="none" stroke="#f0abfc" stroke-width="1" opacity=".3"/>
+        <path d="M56 158 Q64 150,72 158 T88 158 T104 158 T120 158 T136 158 T152 158" stroke="#22d3ee" stroke-width="2" fill="none" opacity=".5" stroke-linecap="round"/>
+        <path d="M60 166 Q70 160,80 166 T100 166 T120 166 T140 166" stroke="#34d399" stroke-width="1.5" fill="none" opacity=".35" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="rim" x1="0" y1="0" x2="200" y2="200">
+            <stop offset="0%" stop-color="#7c3aed" stop-opacity=".6"/>
+            <stop offset="50%" stop-color="#22d3ee" stop-opacity=".4"/>
+            <stop offset="100%" stop-color="#34d399" stop-opacity=".6"/>
+          </linearGradient>
+          <linearGradient id="au1" x1="60" y1="140" x2="140" y2="44">
+            <stop offset="0%" stop-color="#7c3aed"/>
+            <stop offset="50%" stop-color="#a855f7"/>
+            <stop offset="100%" stop-color="#22d3ee"/>
+          </linearGradient>
+          <linearGradient id="au2" x1="68" y1="142" x2="132" y2="56">
+            <stop offset="0%" stop-color="#22d3ee"/>
+            <stop offset="100%" stop-color="#34d399"/>
+          </linearGradient>
+          <linearGradient id="au3" x1="76" y1="144" x2="124" y2="68">
+            <stop offset="0%" stop-color="#34d399"/>
+            <stop offset="100%" stop-color="#f0abfc"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="logo-text">
+        <span class="logo-name">LyricEar</span>
+        <span class="logo-sub">учим языки на слух</span>
+      </span>
+    </a>
+  </div>
 
   <!-- ═══ Header ═══ -->
   <header class="song-header">
@@ -22,35 +63,39 @@
 
     <!-- Player -->
     <section class="panel player-panel">
-      <div class="media-bar">
-        <span class="mini">MEDIA</span>
-        <span class="lamp lamp-off" id="mediaLamp"></span>
-        <span class="mini mono" id="tNow">0.00s</span>
+      <div class="player-compact">
+        <!-- Video (left, smaller) -->
+        <div id="videoWrap" class="video-wrap is-audio">
+          <video id="player" playsinline preload="auto"></video>
+          <button id="btnPlayOverlay" class="play-overlay" aria-label="Play/Pause">▶</button>
+        </div>
+        <!-- Controls (right) -->
+        <div class="player-side">
+          <div class="media-bar">
+            <span class="lamp lamp-off" id="mediaLamp"></span>
+            <span class="mini mono" id="tNow">0.00s</span>
+          </div>
+          <div class="media-btns">
+            <button class="ghost compact-btn pulse" id="btnLoadLocal">📁 Файл</button>
+            <input type="file" id="mediaPick" accept="audio/*,video/*" hidden>
+            <button class="primary compact-btn" id="btnLoadYaDisk">☁ Я.Диск</button>
+            <button class="bad compact-btn" id="btnForgetMedia" style="display:none">🗑</button>
+          </div>
+          <span class="mini mono muted" id="mediaName"></span>
+        </div>
       </div>
-
-      <div id="videoWrap" class="video-wrap is-audio">
-        <video id="player" playsinline preload="auto"></video>
-      </div>
-
+      <!-- Progress bar -->
       <div class="play-row">
-        <button id="btnPlay">▶</button>
+        <button id="btnPlay" class="play-btn-mini">▶</button>
         <input type="range" id="playProgress" min="0" max="1000" value="0">
-        <span id="playTime">0:00 / 0:00</span>
-      </div>
-
-      <div class="media-row">
-        <button class="ghost pulse" id="btnLoadLocal">📁 Выбрать файл</button>
-        <input type="file" id="mediaPick" accept="audio/*,video/*" hidden>
-        <button class="primary" id="btnLoadYaDisk">☁ Яндекс.Диск</button>
-        <button class="bad tiny" id="btnForgetMedia" style="display:none">🗑 Забыть</button>
-        <span class="mini mono" id="mediaName"></span>
+        <span id="playTime" class="mini mono">0:00/0:00</span>
       </div>
     </section>
 
     <!-- Spectrogram -->
     <section class="panel spec-panel">
       <div class="spec-toolbar">
-        <button class="ghost" id="spectrogramToggle">📊 Спектрограмма ▾</button>
+        <button class="ghost compact-btn" id="spectrogramToggle">📊 Спектрограмма ▾</button>
         <button class="ghost spec-zoom-btn" id="specZoomOut">−</button>
         <span class="mini mono" id="specZoomLabel">×1</span>
         <button class="ghost spec-zoom-btn" id="specZoomIn">+</button>
@@ -63,30 +108,21 @@
   </div>
 
   <!-- ═══ Segment controls ═══ -->
-  <section class="panel">
-    <div id="segStatus" class="seg-status"></div>
-
-    <div class="seg-buttons">
-      <button class="primary" id="btnPlaySeg" disabled>▶ Фрагмент</button>
-      <button class="ghost" id="btnStart" disabled>⏱ Start</button>
-      <button class="ghost" id="btnEnd" disabled>⏱ End</button>
-    </div>
-    <div class="seg-buttons" style="margin-top:6px;">
-      <button class="bad" id="btnClear" disabled>✕ Сброс</button>
-    </div>
-
-    <div class="toggle-row">
-      <label><input type="checkbox" id="loopToggle" /> 🔁 Зациклить</label>
-      <label><input type="checkbox" id="autoNextToggle" /> ⏭ Авто</label>
-    </div>
-
-    <div class="toggle-row">
-      <label><input type="checkbox" id="globalShowOrig" /> 🔍 Оригинал</label>
-      <label><input type="checkbox" id="globalShowPhon" /> 👂 Автор</label>
+  <section class="panel seg-panel">
+    <div class="seg-row">
+      <div id="segStatus" class="seg-status"></div>
+      <button class="primary compact-btn" id="btnPlaySeg" disabled>▶ Фрагм</button>
+      <button class="ghost compact-btn" id="btnStart" disabled>⏱S</button>
+      <button class="ghost compact-btn" id="btnEnd" disabled>⏱E</button>
+      <button class="bad compact-btn" id="btnClear" disabled>✕</button>
     </div>
     <div class="toggle-row">
-      <label><input type="checkbox" id="globalShowTrans" /> 💬 Переводы</label>
-      <label><input type="checkbox" id="globalShowWhy" /> 🧠 Почему</label>
+      <label><input type="checkbox" id="loopToggle"> 🔁</label>
+      <label><input type="checkbox" id="autoNextToggle"> ⏭</label>
+      <label><input type="checkbox" id="globalShowOrig"> 🔍</label>
+      <label><input type="checkbox" id="globalShowPhon"> 👂</label>
+      <label><input type="checkbox" id="globalShowTrans"> 💬</label>
+      <label><input type="checkbox" id="globalShowWhy"> 🧠</label>
     </div>
   </section>
 
@@ -102,6 +138,6 @@
     </p>
   </footer>
 
-  <script src="assets/app.js?v=4"></script>
+  <script src="assets/app.js?v=5"></script>
 </body>
 </html>
