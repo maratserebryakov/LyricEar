@@ -11,47 +11,42 @@
 
   <!-- Logo SVG — для index.html и player.html -->
 <div id="logoBar" class="logo-bar">
-  <a href="index.html" class="logo-link">
-    <svg class="logo-svg" width="40" height="40" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="100" cy="100" r="96" stroke="url(#hRim)" stroke-width="3" fill="#0e0b1a"/>
-      <ellipse cx="100" cy="174" rx="42" ry="4" fill="#7c3aed" fill-opacity=".18"/>
-      <path d="M60 140 Q72 60,100 44 Q128 60,140 140" stroke="url(#hAu1)" stroke-width="4" fill="none" stroke-linecap="round"/>
-      <path d="M68 142 Q78 75,100 56 Q122 75,132 142" stroke="url(#hAu2)" stroke-width="2.5" fill="none" opacity=".55" stroke-linecap="round"/>
-      <path d="M76 144 Q84 90,100 68 Q116 90,124 144" stroke="url(#hAu3)" stroke-width="1.5" fill="none" opacity=".35" stroke-linecap="round"/>
-      <circle cx="100" cy="42" r="5" fill="#f0abfc" opacity=".9"/>
-      <circle cx="100" cy="42" r="9" fill="none" stroke="#f0abfc" stroke-width="1" opacity=".3"/>
-      <path d="M56 158 Q64 150,72 158 T88 158 T104 158 T120 158 T136 158 T152 158" stroke="#22d3ee" stroke-width="2" fill="none" opacity=".5" stroke-linecap="round"/>
-      <path d="M60 166 Q70 160,80 166 T100 166 T120 166 T140 166" stroke="#34d399" stroke-width="1.5" fill="none" opacity=".35" stroke-linecap="round"/>
-      <defs>
-        <linearGradient id="hRim" x1="0" y1="0" x2="200" y2="200">
-          <stop offset="0%" stop-color="#7c3aed" stop-opacity=".6"/>
-          <stop offset="50%" stop-color="#22d3ee" stop-opacity=".4"/>
-          <stop offset="100%" stop-color="#34d399" stop-opacity=".6"/>
-        </linearGradient>
-        <linearGradient id="hAu1" x1="60" y1="140" x2="140" y2="44">
-          <stop offset="0%" stop-color="#7c3aed"/>
-          <stop offset="50%" stop-color="#a855f7"/>
-          <stop offset="100%" stop-color="#22d3ee"/>
-        </linearGradient>
-        <linearGradient id="hAu2" x1="68" y1="142" x2="132" y2="56">
-          <stop offset="0%" stop-color="#22d3ee"/>
-          <stop offset="100%" stop-color="#34d399"/>
-        </linearGradient>
-        <linearGradient id="hAu3" x1="76" y1="144" x2="124" y2="68">
-          <stop offset="0%" stop-color="#34d399"/>
-          <stop offset="100%" stop-color="#f0abfc"/>
-        </linearGradient>
-        <linearGradient id="hText" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="#a855f7"/>
-          <stop offset="100%" stop-color="#22d3ee"/>
-        </linearGradient>
-      </defs>
-    </svg>
-    <span class="logo-text">
-      <span class="logo-name">LyricEar</span>
-      <span class="logo-sub">учим языки на слух</span>
-    </span>
-  </a>
+  <a href="/" class="logo-link">
+  <svg class="logo-svg" width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- dark circle base -->
+    <circle cx="22" cy="22" r="21" fill="#111118" stroke="url(#logoRim)" stroke-width="1"/>
+    <!-- aurora arcs -->
+    <path d="M8 28 C12 14, 20 10, 22 10 C24 10, 32 14, 36 28"
+          stroke="url(#auroraG)" stroke-width="1.2" fill="none" opacity="0.9"/>
+    <path d="M10 30 C14 18, 19 14, 22 14 C25 14, 30 18, 34 30"
+          stroke="url(#auroraG)" stroke-width="0.8" fill="none" opacity="0.5"/>
+    <path d="M12 32 C15 22, 19 18, 22 18 C25 18, 29 22, 32 32"
+          stroke="url(#auroraG)" stroke-width="0.6" fill="none" opacity="0.3"/>
+    <!-- sound wave -->
+    <path d="M10 33 Q14 30, 16 33 T22 33 T28 33 T34 33"
+          stroke="#c084fc" stroke-width="1" fill="none" opacity="0.7"/>
+    <path d="M12 36 Q16 34, 18 36 T24 36 T30 36"
+          stroke="#22d3ee" stroke-width="0.6" fill="none" opacity="0.4"/>
+    <!-- star dot -->
+    <circle cx="22" cy="11" r="1.2" fill="#f0abfc" opacity="0.9"/>
+    <defs>
+      <linearGradient id="logoRim" x1="0" y1="0" x2="44" y2="44">
+        <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.4"/>
+        <stop offset="50%" stop-color="#22d3ee" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="#34d399" stop-opacity="0.4"/>
+      </linearGradient>
+      <linearGradient id="auroraG" x1="8" y1="28" x2="36" y2="10">
+        <stop offset="0%" stop-color="#7c3aed"/>
+        <stop offset="50%" stop-color="#22d3ee"/>
+        <stop offset="100%" stop-color="#34d399"/>
+      </linearGradient>
+    </defs>
+  </svg>
+  <span class="logo-text">
+    <span class="logo-name">LyricEar</span>
+    <span class="logo-sub">учим языки на слух</span>
+  </span>
+</a>
 </div>
   <!-- ═══ Header ═══ -->
   <header class="song-header">
