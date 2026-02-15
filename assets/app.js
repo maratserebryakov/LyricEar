@@ -88,7 +88,9 @@
     } catch (e) { console.warn("[IDB] delete failed:", e); return false; }
   }
 
-  /* Spectrogram Engine */
+  /* ══════════════════════════════════════
+     Spectrogram Engine
+     ══════════════════════════════════════ */
   function createSpectrogram(canvas, playerEl) {
     var ctx = canvas.getContext("2d");
     var audioCtx = null, analyser = null, source = null;
@@ -116,15 +118,16 @@
       var range = STOPS[hi][0] - STOPS[lo][0] || 1;
       var f = (t - STOPS[lo][0]) / range;
       LUT[i] = [
-        Math.round(STOPS[lo][1] + (STOPS[hi][1] - STOPS[lo][1]) * f),
-        Math.round(STOPS[lo][2] + (STOPS[hi][2] - STOPS[lo][2]) * f),
-        Math.round(STOPS[lo][3] + (STOPS[hi][3] - STOPS[lo][3]) * f)
+        Math.round(STOPS[lo][[1]](#annotation-101793-0) + (STOPS[hi][[1]](#annotation-101793-0) - STOPS[lo][[1]](#annotation-101793-0)) * f),
+        Math.round(STOPS[lo][[2]](#annotation-101793-1) + (STOPS[hi][[2]](#annotation-101793-1) - STOPS[lo][[2]](#annotation-101793-1)) * f),
+        Math.round(STOPS[lo][[3]](#annotation-101793-2) + (STOPS[hi][[3]](#annotation-101793-2) - STOPS[lo][[3]](#annotation-101793-2)) * f)
       ];
     }
 
     var zoom = 1, writeX = 0, freqData = null;
     var noiseFloor = 5;
     var peakVal = 80;
+    var labelMargin = 0; // computed after first drawZones
 
     var FREQ_ZONES = [
       { freq: 300,  label: "300 Hz",  desc: "гласные",   color: "rgba(55,230,255,0.45)" },
@@ -146,6 +149,22 @@
       var mf = getMaxFreq() / zoom;
       var r = freq / mf;
       return r > 1 ? -1 : Math.round(H * (1 - r));
+    }
+
+    /* Compute the pixel width of zone labels so writeX starts after them */
+    function computeLabelMargin() {
+      var dpr = window.devicePixelRatio || 1;
+      var fs = Math.round(10 * dpr);
+      ctx.font = "bold " + fs + "px -apple-system,BlinkMacSystemFont,sans-serif";
+      var maxW = 0;
+      FREQ_ZONES.forEach(function(z) {
+        var txt = z.label + "  " + z.desc;
+        var tw = ctx.measureText(txt).width;
+        if (tw > maxW) maxW = tw;
+      });
+      var p = 3 * dpr;
+      var bx = 3 * dpr;
+      labelMargin = Math.ceil(bx + maxW + p * 2 + 4 * dpr);
     }
 
     function drawZones() {
@@ -216,9 +235,10 @@
       canvas.width  = Math.round(r.width  * dpr);
       canvas.height = Math.round(r.height * dpr);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = "rgb(" + LUT[0][0] + "," + LUT[0][1] + "," + LUT[0][2] + ")";
+      ctx.fillStyle = "rgb(" + LUT[0][0] + "," + LUT[0][[1]](#annotation-101793-0) + "," + LUT[0][[2]](#annotation-101793-1) + ")";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      writeX = 0;
+      computeLabelMargin();
+      writeX = labelMargin; // start drawing AFTER labels
       noiseFloor = 5; peakVal = 80;
       drawZones();
     }
@@ -229,8 +249,16 @@
 
       var W = canvas.width, H = canvas.height;
       if (writeX >= W) {
-        var img = ctx.getImageData(1, 0, W - 1, H);
-        ctx.putImageData(img, 0, 0);
+        // scroll: shift everything left but keep label area
+        var dataW = W - labelMargin;
+        if (dataW > 1) {
+          var img = ctx.getImageData(labelMargin + 1, 0, dataW - 1, H);
+          // clear whole canvas and redraw
+          ctx.fillStyle = "rgb(" + LUT[0][0] + "," + LUT[0][[1]](#annotation-101793-0) + "," + LUT[0][[2]](#annotation-101793-1) + ")";
+          ctx.fillRect(0, 0, W, H);
+          ctx.putImageData(img, labelMargin, 0);
+          drawZones();
+        }
         writeX = W - 1;
       }
 
@@ -261,7 +289,7 @@
         var idx = Math.max(0, Math.min(255, Math.round(norm * 255)));
         var c = LUT[idx] || LUT[0];
         var off = y * 4;
-        d[off] = c[0]; d[off+1] = c[1]; d[off+2] = c[2]; d[off+3] = 255;
+        d[off] = c[0]; d[off+1] = c[[1]](#annotation-101793-0); d[off+2] = c[[2]](#annotation-101793-1); d[off+3] = 255;
       }
 
       ctx.putImageData(col, writeX, 0);
@@ -348,7 +376,9 @@
     return slug.indexOf("/") !== -1 ? slug : "data/songs/" + slug + ".json";
   }
 
-  /* SONG PAGE */
+  /* ══════════════════════════════════════
+     SONG PAGE
+     ══════════════════════════════════════ */
   async function bootSongPage() {
     var slug = getSongSlug();
     if (!slug) return;
@@ -377,6 +407,7 @@
     var btnLoadLocal   = $("#btnLoadLocal");
     var btnLoadYaDisk  = $("#btnLoadYaDisk");
     var btnForgetMedia = $("#btnForgetMedia");
+    var mediaSource    = $("#mediaSource");
     var mediaName      = $("#mediaName");
     var lamp           = $("#mediaLamp");
     var elNow          = $("#tNow");
@@ -435,6 +466,14 @@
       if (btnForgetMedia) btnForgetMedia.style.display = v ? "inline-block" : "none";
     }
     showForgetBtn(false);
+
+    /* Collapse media source after file is loaded */
+    function collapseMediaSource() {
+      if (mediaSource) mediaSource.classList.add("collapsed");
+    }
+    function expandMediaSource() {
+      if (mediaSource) mediaSource.classList.remove("collapsed");
+    }
 
     /* save */
     var saveT = null;
@@ -514,6 +553,7 @@
       showMediaN(name);
       showForgetBtn(true);
       if (btnLoadLocal) btnLoadLocal.classList.remove("pulse");
+      collapseMediaSource();
       ensureSpec();
       if (persist) {
         var ok = await idbSave(songId, blob, name, mime);
@@ -547,6 +587,7 @@
         if (player._url) try { URL.revokeObjectURL(player._url); } catch(e) {}
         player.removeAttribute("src"); player.load();
         applyMode(false); setLamp("none"); showMediaN(""); showForgetBtn(false);
+        expandMediaSource();
         if (spec) { spec.stop(); spec.clear(); }
         toast("Медиа удалено");
       });
@@ -597,13 +638,14 @@
     });
     player.addEventListener("seeked", function() { if (!player.paused) specClear(); });
 
-    /* progress bar */
+    /* progress bar + timecode */
     player.addEventListener("timeupdate", function() {
-      if (elNow) elNow.textContent = (player.currentTime || 0).toFixed(2) + "s";
+      var ct = player.currentTime || 0;
+      if (elNow) elNow.textContent = ct.toFixed(2) + "s";
       if (playProgress && player.duration)
-        playProgress.value = (player.currentTime / player.duration * 1000).toFixed(0);
+        playProgress.value = (ct / player.duration * 1000).toFixed(0);
       if (playTime)
-        playTime.textContent = fmtTime(player.currentTime) + "/" + fmtTime(player.duration);
+        playTime.textContent = fmtTime(ct) + "/" + fmtTime(player.duration);
     });
     if (playProgress) {
       playProgress.addEventListener("input", function() {
@@ -627,7 +669,7 @@
     if (specToggle && specWrap) {
       specToggle.addEventListener("click", function() {
         var c = specWrap.classList.toggle("collapsed");
-        specToggle.textContent = c ? "Спектрограмма >" : "Спектрограмма v";
+        specToggle.textContent = c ? "📊 Спектрограмма ▸" : "📊 Спектрограмма ▾";
         if (!c) {
           setTimeout(function() {
             if (spec) spec.resetCanvas();
@@ -641,7 +683,7 @@
         }
       });
     }
-    function updateZL() { if (specZoomLbl && spec) specZoomLbl.textContent = "x" + spec.getZoom(); }
+    function updateZL() { if (specZoomLbl && spec) specZoomLbl.textContent = "×" + spec.getZoom(); }
     if (specZoomIn)  specZoomIn.addEventListener("click",  function() { if (spec) { spec.zoomIn();  updateZL(); } });
     if (specZoomOut) specZoomOut.addEventListener("click", function() { if (spec) { spec.zoomOut(); updateZL(); } });
 
@@ -653,9 +695,8 @@
       var e = it ? it.end : null;
       el.innerHTML =
         '<span class="pill">Строка: <span class="mono">' + (activeIndex + 1) + '/' + state.items.length + '</span></span>' +
-        '<span class="pill">Start: <span class="mono">' + (s == null ? "—" : Number(s).toFixed(2)) + '</span></span>' +
-        '<span class="pill">End: <span class="mono">' + (e == null ? "—" : Number(e).toFixed(2)) + '</span></span>' +
-        '<span class="pill">' + (it && it.learned ? "learned" : "...") + '</span>';
+        '<span class="pill">S: <span class="mono">' + (s == null ? "—" : Number(s).toFixed(2)) + '</span></span>' +
+        '<span class="pill">E: <span class="mono">' + (e == null ? "—" : Number(e).toFixed(2)) + '</span></span>';
       var ready = s != null && e != null && Number(e) > Number(s);
       if (btnPlaySeg) btnPlaySeg.disabled = !ready;
       if (btnClear)   btnClear.disabled   = !(s != null || e != null);
@@ -708,7 +749,7 @@
     if (btnEnd) btnEnd.addEventListener("click", function() {
       var it = state.items[activeIndex];
       it.end = Number(player.currentTime.toFixed(2));
-      if (it.start != null && Number(it.end) <= Number(it.start)) { toast("End <= Start"); it.end = null; }
+      if (it.start != null && Number(it.end) <= Number(it.start)) { toast("End ≤ Start"); it.end = null; }
       save(); renderLines();
     });
     if (btnClear) btnClear.addEventListener("click", function() {
@@ -724,6 +765,10 @@
       var it = state.items[activeIndex];
       if (seek && it && it.start != null && Number.isFinite(it.start))
         player.currentTime = Math.max(0, Number(it.start));
+
+      /* scroll active line into view */
+      var el = linesHost.children[activeIndex];
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
     /* render lines */
@@ -749,10 +794,13 @@
         var hdr = document.createElement("div"); hdr.className = "line-header";
         var num = document.createElement("span"); num.className = "line-num"; num.textContent = idx + 1;
         var inp = document.createElement("input");
-        inp.type = "text"; inp.className = "user-heard"; inp.placeholder = "Как услышал(а)...";
+        inp.type = "text"; inp.className = "user-heard"; inp.placeholder = "Напиши, что слышишь…";
         inp.value = it.phonetic_user || "";
         inp.addEventListener("input", function() { it.phonetic_user = inp.value; save(); });
         inp.addEventListener("click", function(e) { e.stopPropagation(); });
+        inp.addEventListener("focus", function() {
+          if (idx !== activeIndex) setActive(idx, false);
+        });
         hdr.appendChild(num); hdr.appendChild(inp);
 
         var origRow = document.createElement("div"); origRow.className = "orig-row";
@@ -770,18 +818,18 @@
 
         var phonRow  = document.createElement("div");
         phonRow.className = "sub sub-phon" + (sP ? " visible" : "");
-        if (it.phonetic) phonRow.innerHTML = '<div class="subCard"><b>ear</b> <span class="mono phon-author">' + esc(it.phonetic) + '</span></div>';
+        if (it.phonetic) phonRow.innerHTML = '<div class="subCard"><b>🔊</b> <span class="mono phon-author">' + esc(it.phonetic) + '</span></div>';
 
         var transRow = document.createElement("div");
         transRow.className = "sub sub-trans" + (sT ? " visible" : "");
-        if (it.translation) transRow.innerHTML = '<div class="subCard"><span class="muted">Перевод:</span> ' + esc(it.translation) + '</div>';
+        if (it.translation) transRow.innerHTML = '<div class="subCard"><span class="muted">💬</span> ' + esc(it.translation) + '</div>';
 
         var whyRow = document.createElement("div");
         whyRow.className = "sub sub-why" + (sW ? " visible" : "");
         if (it.why) {
           var conf = typeof it.confidence === "number"
             ? ' <span class="pill">~' + (clamp01(it.confidence)*100).toFixed(0) + '%</span>' : "";
-          whyRow.innerHTML = '<div class="subCard"><b>brain</b>' + conf + '<div style="margin-top:4px">' + esc(it.why) + '</div></div>';
+          whyRow.innerHTML = '<div class="subCard"><b>🧠</b>' + conf + '<div style="margin-top:4px">' + esc(it.why) + '</div></div>';
         }
 
         var acts = document.createElement("div"); acts.className = "line-actions";
@@ -791,14 +839,10 @@
           b.addEventListener("click", function(e) { e.stopPropagation(); fn(); });
           return b;
         }
-        acts.appendChild(mb("Sel", "tiny btn-primary", function() { setActive(idx, true); }));
-        if (hasT) acts.appendChild(mb("Play", "tiny", function() { setActive(idx, false); playSegment(); }));
-        if (it.phonetic) acts.appendChild(mb("ear", "tiny", function() { phonRow.classList.toggle("visible"); }));
-        acts.appendChild(mb("trans", "tiny", function() { transRow.classList.toggle("visible"); }));
-        if (it.why) acts.appendChild(mb("why", "tiny", function() { whyRow.classList.toggle("visible"); }));
-        acts.appendChild(mb(it.learned ? "Done" : "Learn",
-          "tiny " + (it.learned ? "btn-good" : ""),
-          function() { it.learned = !it.learned; save(); renderLines(); }));
+        if (hasT) acts.appendChild(mb("▶", "tiny btn-primary", function() { setActive(idx, false); playSegment(); }));
+        if (it.phonetic) acts.appendChild(mb("🔊", "tiny", function() { phonRow.classList.toggle("visible"); }));
+        acts.appendChild(mb("💬", "tiny", function() { transRow.classList.toggle("visible"); }));
+        if (it.why) acts.appendChild(mb("🧠", "tiny", function() { whyRow.classList.toggle("visible"); }));
 
         line.appendChild(hdr);
         line.appendChild(origRow);
@@ -847,23 +891,77 @@
       if (!ok && btnLoadLocal) btnLoadLocal.classList.add("pulse");
     });
 
-    /* keyboard */
+    /* ══════════════════════════════════════
+       Keyboard shortcuts
+       ══════════════════════════════════════ */
     document.addEventListener("keydown", function(e) {
       var tag = (e.target.tagName || "").toLowerCase();
-      if (tag === "input" || tag === "textarea") return;
+      var inInput = (tag === "input" || tag === "textarea");
+
+      // Space — play/pause (always, even in input with Ctrl)
+      if (e.key === " " && (!inInput || e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        if (!player.src && !player.currentSrc) return;
+        player.paused ? player.play().catch(function(){}) : player.pause();
+        return;
+      }
+
+      // Shortcuts that work only outside inputs
+      if (inInput) return;
+
       var k = e.key.toLowerCase();
-      if (k === " ")  { e.preventDefault(); player.paused ? player.play().catch(function(){}) : player.pause(); }
-      if (k === "s")  { e.preventDefault(); if (btnStart) btnStart.click(); }
-      if (k === "e")  { e.preventDefault(); if (btnEnd) btnEnd.click(); var nx = Math.min(activeIndex+1, state.items.length-1); if (nx !== activeIndex) setTimeout(function() { setActive(nx, false); }, 100); }
-      if (k === "arrowdown" || k === "n") { e.preventDefault(); setActive(Math.min(activeIndex+1, state.items.length-1), false); }
-      if (k === "arrowup"   || k === "p") { e.preventDefault(); setActive(Math.max(activeIndex-1, 0), false); }
-      if (k === "r")  { e.preventDefault(); playSegment(); }
+
+      // S — set start mark
+      if (k === "s") { e.preventDefault(); if (btnStart && !btnStart.disabled) btnStart.click(); }
+
+      // E — set end mark, auto-advance
+      if (k === "e") {
+        e.preventDefault();
+        if (btnEnd && !btnEnd.disabled) btnEnd.click();
+        var nx = Math.min(activeIndex + 1, state.items.length - 1);
+        if (nx !== activeIndex) setTimeout(function() { setActive(nx, false); }, 100);
+      }
+
+      // Arrow down / N — next line
+      if (k === "arrowdown" || k === "n") {
+        e.preventDefault();
+        setActive(Math.min(activeIndex + 1, state.items.length - 1), false);
+      }
+
+      // Arrow up / P — prev line
+      if (k === "arrowup" || k === "p") {
+        e.preventDefault();
+        setActive(Math.max(activeIndex - 1, 0), false);
+      }
+
+      // R — replay segment
+      if (k === "r") { e.preventDefault(); playSegment(); }
+
+      // L — toggle loop
+      if (k === "l") {
+        e.preventDefault();
+        if (loopToggle) { loopToggle.checked = !loopToggle.checked; }
+      }
+
+      // Arrow left — seek back 3s
+      if (k === "arrowleft") {
+        e.preventDefault();
+        if (player.duration) player.currentTime = Math.max(0, player.currentTime - 3);
+      }
+
+      // Arrow right — seek forward 3s
+      if (k === "arrowright") {
+        e.preventDefault();
+        if (player.duration) player.currentTime = Math.min(player.duration, player.currentTime + 3);
+      }
     });
 
-    toast("S/E=marks, Space=play, arrows=lines, R=segment");
+    toast("Клавиши: Space, S, E, R, L, ↑↓←→");
   }
 
-  /* HOME PAGE */
+  /* ══════════════════════════════════════
+     HOME PAGE
+     ══════════════════════════════════════ */
   async function bootHome() {
     var root = document.documentElement;
     if (!root.dataset.catalog) return;
@@ -901,7 +999,9 @@
     render();
   }
 
-  /* BOOT */
+  /* ══════════════════════════════════════
+     BOOT
+     ══════════════════════════════════════ */
   window.addEventListener("DOMContentLoaded", async function() {
     showStorageConsent();
 
