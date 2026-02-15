@@ -133,16 +133,16 @@
     let noiseFloor = 5;
     let peakVal = 80;
 
-    const FREQ_ZONES = [
-      { freq: 300,  label: "300 Hz",  desc: "гласные",    color: "rgba(55,230,255,0.9)" },
-      { freq: 3000, label: "3 kHz",   desc: "согласные",   color: "rgba(215,60,195,0.9)" },
-      { freq: 6000, label: "6 kHz",   desc: "шипящие",     color: "rgba(155,95,238,0.8)" },
+        const FREQ_ZONES = [
+      { freq: 300,  label: "300 Hz",  desc: "гласные",    color: "rgba(55,230,255,0.45)" },
+      { freq: 3000, label: "3 kHz",   desc: "согласные",   color: "rgba(215,60,195,0.45)" },
+      { freq: 6000, label: "6 kHz",   desc: "шипящие",     color: "rgba(155,95,238,0.4)" },
     ];
 
-    const ZONE_BANDS = [
-      { from: 0,    to: 300,   bg: "rgba(55,230,255,0.06)" },
-      { from: 300,  to: 3000,  bg: "rgba(215,60,195,0.05)" },
-      { from: 3000, to: 24000, bg: "rgba(155,95,238,0.04)" },
+        const ZONE_BANDS = [
+      { from: 0,    to: 300,   bg: "rgba(55,230,255,0.015)" },
+      { from: 300,  to: 3000,  bg: "rgba(215,60,195,0.012)" },
+      { from: 3000, to: 24000, bg: "rgba(155,95,238,0.01)" },
     ];
 
     function getMaxFreq() {
@@ -266,7 +266,8 @@
 
         // normalize to 0..1 using adaptive range
         let norm = (raw - floor) / range;
-        norm = Math.max(0, Math.min(1, norm));
+                // gamma: higher = darker background, brighter peaks
+        norm = Math.pow(norm, 0.45);
 
         // apply gamma curve for better contrast (lift quiet parts)
         norm = Math.pow(norm, 0.6);
