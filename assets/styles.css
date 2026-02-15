@@ -77,24 +77,22 @@ button:disabled { opacity: .35; cursor: default; }
   50%     { box-shadow: 0 0 18px var(--accent), 0 0 40px rgba(168,85,247,.3); }
 }
 
-/* ── Logo ── */
-.logo-bar { padding: 6px 0 4px; }
+/* ═══ Logo ═══ */
 .logo-link {
   display: inline-flex; align-items: center; gap: 10px;
-  text-decoration: none; color: var(--text);
+  text-decoration: none; color: inherit; margin-bottom: 12px;
+  transition: opacity 150ms ease;
 }
-.logo-link:hover { text-decoration: none; }
+.logo-link:hover { opacity: 0.85; }
 .logo-svg { flex-shrink: 0; }
-.logo-text { display: flex; flex-direction: column; line-height: 1.2; }
+.logo-text { display: flex; flex-direction: column; gap: 1px; }
 .logo-name {
-  font-size: 1.3rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #a855f7 0%, #c084fc 30%, #22d3ee 70%, #06b6d4 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 18px; font-weight: 800;
+  background: linear-gradient(135deg, #c084fc, #22d3ee, #34d399);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; line-height: 1.15;
 }
-.logo-sub { font-size: 0.75rem; color: var(--muted); }
+.logo-sub { font-size: 11px; color: #71717a; letter-spacing: 0.5px; }
 
 /* ── Toast ── */
 .toast {
