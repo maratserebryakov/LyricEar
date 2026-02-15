@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════
-   LyricEar — styles.css  v4
+   LyricEar — styles.css  v5
    ══════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -51,7 +51,7 @@ a:hover { text-decoration: underline; }
 
 .hint { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
 
-/* ── Buttons ── */
+/* ── Buttons (desktop default) ── */
 button {
   font: inherit; cursor: pointer; border: none;
   border-radius: var(--radius); padding: 10px 18px;
@@ -76,6 +76,18 @@ button:disabled { opacity: .35; cursor: default; }
   0%,100% { box-shadow: 0 0 4px var(--accent); }
   50%     { box-shadow: 0 0 18px var(--accent), 0 0 40px rgba(168,85,247,.3); }
 }
+
+/* ── Logo ── */
+.logo-bar { padding: 6px 0 4px; }
+.logo-link {
+  display: inline-flex; align-items: center; gap: 10px;
+  text-decoration: none; color: var(--text);
+}
+.logo-link:hover { text-decoration: none; }
+.logo-svg { flex-shrink: 0; }
+.logo-text { display: flex; flex-direction: column; line-height: 1.2; }
+.logo-name { font-size: 1.15rem; font-weight: 700; color: var(--accent2); }
+.logo-sub  { font-size: 0.72rem; color: var(--muted); }
 
 /* ── Toast ── */
 .toast {
@@ -108,7 +120,6 @@ button:disabled { opacity: .35; cursor: default; }
   position: sticky;
   top: 0;
   z-index: 100;
-  /* panels inside have their own backgrounds */
 }
 
 /* ── Player ── */
@@ -124,25 +135,30 @@ button:disabled { opacity: .35; cursor: default; }
   border-radius: var(--radius); background: #000;
   overflow: hidden;
 }
-
-/* video mode: fill the container, crop edges if needed */
-.video-wrap.is-video {
-  aspect-ratio: 16 / 9;
-}
+.video-wrap.is-video { aspect-ratio: 16 / 9; }
 .video-wrap.is-video video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 60%; 
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center 60%;
   display: block;
 }
+.video-wrap.is-audio { height: 0; overflow: hidden; }
+.video-wrap.is-audio video { display: none; }
 
-/* audio mode: completely hidden */
-.video-wrap.is-audio {
-  height: 0; overflow: hidden;
+/* Play overlay */
+.video-wrap .play-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.25);
+  opacity: 0; transition: opacity .2s;
+  pointer-events: none;
 }
-.video-wrap.is-audio video {
-  display: none;
+.video-wrap.paused .play-overlay { opacity: 1; pointer-events: auto; }
+.play-overlay button {
+  font-size: 2rem; width: 56px; height: 56px;
+  border-radius: 50%; border: 2px solid rgba(255,255,255,.7);
+  background: rgba(0,0,0,.45); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
 }
 
 .media-row {
@@ -300,3 +316,106 @@ button:disabled { opacity: .35; cursor: default; }
 .songTitle { font-weight: 600; font-size: 1.1rem; color: var(--accent2); }
 .songMeta  { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 .songSmall { font-size: .85rem; color: var(--muted); margin-top: 4px; }
+
+/* ══════════════════════════════════════
+   MOBILE COMPACT  (max-width: 600px)
+   ══════════════════════════════════════ */
+@media (max-width: 600px) {
+
+  /* All buttons — half height */
+  button {
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    line-height: 1.2;
+  }
+  .tiny {
+    font-size: 0.7rem;
+    padding: 3px 7px;
+  }
+  .btn-reveal {
+    font-size: 0.7rem;
+    padding: 2px 7px;
+  }
+  .pill {
+    padding: 1px 7px;
+    font-size: 0.72rem;
+  }
+
+  /* Play button circle */
+  #btnPlay {
+    width: 34px; height: 34px;
+    font-size: 17px;
+  }
+
+  /* Spectrogram zoom buttons */
+  .spec-zoom-btn {
+    width: 30px; height: 30px;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+  #specZoomLabel {
+    font-size: 0.72rem;
+  }
+
+  /* Play overlay on video */
+  .play-overlay button {
+    width: 44px; height: 44px;
+    font-size: 1.5rem;
+  }
+
+  /* Player row */
+  .play-row { gap: 6px; margin: 3px 0; }
+  #playTime { font-size: 11px; }
+  #playProgress { height: 5px; }
+
+  /* Media row tighter */
+  .media-row { gap: 5px; margin-top: 5px; }
+  .media-bar { gap: 5px; margin-bottom: 3px; }
+  #mediaName { font-size: 0.72rem; }
+  #tNow { font-size: 0.75rem; }
+
+  /* Lamp smaller */
+  .lamp { width: 8px; height: 8px; }
+
+  /* Panels tighter */
+  .player-panel { padding: 6px; }
+  .spec-panel   { padding: 5px 6px 6px; }
+  .panel        { padding: 8px; margin-bottom: 6px; }
+
+  /* Segment controls */
+  .seg-status  { gap: 3px; margin-bottom: 4px; }
+  .seg-buttons { gap: 4px; }
+
+  /* Toggles */
+  .toggle-row {
+    gap: 6px 12px; margin-top: 6px;
+    font-size: 0.76rem;
+  }
+  .toggle-row label { font-size: 0.74rem; gap: 3px; }
+
+  /* Lines compact */
+  .line { padding: 7px 8px; }
+  .line-header { gap: 5px; }
+  .line-num { font-size: 0.68rem; min-width: 18px; }
+  .user-heard { font-size: 0.84rem; padding: 4px 7px; }
+  .orig-row { margin-top: 3px; gap: 5px; }
+  .orig-text { font-size: 0.88rem; }
+  .subCard { padding: 5px 7px; font-size: 0.8rem; margin-top: 3px; }
+  .line-actions { gap: 3px; margin-top: 5px; }
+
+  /* Song header */
+  .song-header { padding: 10px 4px 5px; }
+  .song-header h1 { font-size: 1.2rem; }
+  .song-header p  { font-size: 0.85rem; }
+
+  /* Spectrogram height */
+  .spec-wrap { height: 80px; }
+  .spec-toolbar { gap: 5px; margin-bottom: 3px; }
+
+  /* Save indicator */
+  .save-indicator { font-size: 1.1rem; }
+
+  /* Storage banner */
+  #storageBanner { padding: 8px 12px; font-size: 0.78rem; gap: 8px; }
+  #storageBanner button { padding: 4px 12px; font-size: 0.78rem; }
+}
