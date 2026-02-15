@@ -293,6 +293,7 @@
     }
     function stop()    { running = false; if (rafId) { cancelAnimationFrame(rafId); rafId = null; } }
     function clear()   { resetCanvas(); }
+        function rewind() { writeX = 0; }    
     function zoomIn()  { if (zoom < 4) { zoom *= 2; clear(); } }
     function zoomOut() { if (zoom > 1) { zoom /= 2; clear(); } }
     function getZoom() { return zoom; }
@@ -304,7 +305,7 @@
     });
 
     resetCanvas();
-    return { start, stop, clear, zoomIn, zoomOut, getZoom, ensureAudio, resetCanvas };
+    return { start, stop, clear, rewind, zoomIn, zoomOut, getZoom, ensureAudio, resetCanvas };
   }
 
   /* ── storage consent ── */
