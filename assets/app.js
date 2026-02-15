@@ -1,4 +1,4 @@
-;;(function () {
+;(function () {
   /* ── helpers ── */
   const $ = (s, r = document) => r.querySelector(s);
 
@@ -93,6 +93,8 @@
   /* ══════════════════════════════════════
      Spectrogram Engine
      ══════════════════════════════════════ */
+  const SPEC_LABEL_W = 80; // px reserved for frequency labels on the left
+
   function createSpectrogram(canvas, playerEl) {
     const ctx = canvas.getContext("2d");
     let audioCtx = null, analyser = null, source = null;
@@ -114,13 +116,19 @@
       const range = STOPS[hi][0] - STOPS[lo][0] || 1;
       const f = (t - STOPS[lo][0]) / range;
       LUT[i] = [
-        Math.round(STOPS[lo][1] + (STOPS[hi][1] - STOPS[lo][1]) * f),
-        Math.round(STOPS[lo][2] + (STOPS[hi][2] - STOPS[lo][2]) * f),
-        Math.round(STOPS[lo][3] + (STOPS[hi][3] - STOPS[lo][3]) * f)
+        Math.round(STOPS[lo][[1]](#annotation-100616-0) + (STOPS[hi][[1]](#annotation-100616-0) - STOPS[lo][[1]](#annotation-100616-0)) * f),
+        Math.round(STOPS[lo][[2]](#annotation-100616-1) + (STOPS[hi][[2]](#annotation-100616-1) - STOPS[lo][[2]](#annotation-100616-1)) * f),
+        Math.round(STOPS[lo][[3]](#annotation-100616-2) + (STOPS[hi][[3]](#annotation-100616-2) - STOPS[lo][[3]](#annotation-100616-2)) * f)
       ];
     }
 
     let zoom = 1, writeX = 0, freqData = null;
+
+    /* px offset for label area (scaled by devicePixelRatio) */
+    function labelPx() {
+      const dpr = window.devicePixelRatio || 1;
+      return Math.round(SPEC_LABEL_W * dpr);
+    }
 
     function ensureAudio() {
       if (connected) return true;
@@ -147,20 +155,66 @@
       canvas.height = Math.round(rect.height * dpr);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       const bg = LUT[0];
-      ctx.fillStyle = `rgb(${bg[0]},${bg[1]},${bg[2]})`;
+      ctx.fillStyle = `rgb(${bg[0]},${bg[[1]](#annotation-100616-0)},${bg[[2]](#annotation-100616-1)})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      writeX = 0;
+      writeX = labelPx(); // start drawing after label area
+      drawLabels();
+    }
+
+    /* draw frequency labels with semi-transparent background */
+    function drawLabels() {
+      const dpr = window.devicePixelRatio || 1;
+      const H = canvas.height;
+      const lw = labelPx();
+
+      // semi-transparent background behind labels
+      ctx.fillStyle = "rgba(10, 8, 24, 0.7)";
+      ctx.fillRect(0, 0, lw, H);
+
+      ctx.font = `${Math.round(10 * dpr)}px monospace`;
+      ctx.textBaseline = "middle";
+
+      const labels = [
+        { text: "6kHz шипящие",  color: "#22d3ee", yRatio: 0.15 },
+        { text: "3kHz согласные", color: "#a855f7", yRatio: 0.50 },
+        { text: "300Hz гласные",  color: "#ef4444", yRatio: 0.85 }
+      ];
+
+      labels.forEach(lb => {
+        const y = H * lb.yRatio;
+        ctx.globalAlpha = 0.6;
+        ctx.fillStyle = lb.color;
+        ctx.fillText(lb.text, 4 * dpr, y);
+
+        // dashed line
+        ctx.strokeStyle = lb.color;
+        ctx.globalAlpha = 0.3;
+        ctx.setLineDash([4 * dpr, 4 * dpr]);
+        ctx.beginPath();
+        ctx.moveTo(lw, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1.0;
+      });
     }
 
     function drawColumn() {
       if (!analyser || !freqData) return;
       analyser.getByteFrequencyData(freqData);
       const W = canvas.width, H = canvas.height;
+      const lw = labelPx();
+
       if (writeX >= W) {
-        const img = ctx.getImageData(1, 0, W - 1, H);
-        ctx.putImageData(img, 0, 0);
+        // shift spectrogram data (only the area after labels)
+        const dataW = W - lw;
+        if (dataW > 1) {
+          const img = ctx.getImageData(lw + 1, 0, dataW - 1, H);
+          ctx.putImageData(img, lw, 0);
+        }
         writeX = W - 1;
       }
+
       const totalBins = analyser.frequencyBinCount;
       const visBins   = Math.floor(totalBins / zoom);
       const col = ctx.createImageData(1, H);
@@ -170,7 +224,7 @@
         const val = Math.max(0, Math.min(255, freqData[bin] || 0));
         const c   = LUT[val];
         const off = y * 4;
-        d[off] = c[0]; d[off+1] = c[1]; d[off+2] = c[2]; d[off+3] = 255;
+        d[off] = c[0]; d[off+1] = c[[1]](#annotation-100616-0); d[off+2] = c[[2]](#annotation-100616-1); d[off+3] = 255;
       }
       ctx.putImageData(col, writeX, 0);
       writeX++;
@@ -181,7 +235,7 @@
     function start() {
       if (!ensureAudio()) return;
       if (audioCtx.state === "suspended") audioCtx.resume();
-      if (running) return;          // already running
+      if (running) return;
       running = true;
       loop();
     }
@@ -279,9 +333,10 @@
     const songId = state.song?.id || slug;
     if (state.song?.title) document.title = `${state.song.title} — LyricEar`;
 
-    /* ── DOM refs (all from HTML) ── */
+    /* ── DOM refs ── */
     const player         = $("#player");
     const videoWrap      = $("#videoWrap");
+    const btnPlayOverlay = $("#btnPlayOverlay");
     const mediaPick      = $("#mediaPick");
     const btnLoadLocal   = $("#btnLoadLocal");
     const btnLoadYaDisk  = $("#btnLoadYaDisk");
@@ -372,6 +427,33 @@
     }
     applyMode(false);
 
+    /* ── Play overlay on video ── */
+    function syncOverlay() {
+      if (!btnPlayOverlay || !videoWrap) return;
+      if (player.paused) videoWrap.classList.add("paused");
+      else videoWrap.classList.remove("paused");
+      btnPlayOverlay.textContent = player.paused ? "▶" : "⏸";
+    }
+
+    if (btnPlayOverlay) {
+      btnPlayOverlay.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!player.src && !player.currentSrc) { toast("Сначала выберите файл"); return; }
+        if (player.paused) player.play().catch(() => {});
+        else player.pause();
+      });
+    }
+
+    if (videoWrap) {
+      videoWrap.addEventListener("click", (e) => {
+        // don't toggle if clicking buttons inside
+        if (e.target.closest("button")) return;
+        if (!player.src && !player.currentSrc) return;
+        if (player.paused) player.play().catch(() => {});
+        else player.pause();
+      });
+    }
+
     /* ── Spectrogram: ensure created once ── */
     function ensureSpec() {
       if (!spec && specCanvas) {
@@ -379,7 +461,6 @@
       }
     }
 
-    /* ── Spectrogram: start drawing (idempotent) ── */
     function specStart() {
       ensureSpec();
       if (spec) { spec.ensureAudio(); spec.start(); }
@@ -445,7 +526,7 @@
         btnLoadYaDisk.addEventListener("click", () => {
           window.open(yd, "yadisk", "width=700,height=500");
           if (btnLoadLocal) btnLoadLocal.classList.add("pulse");
-          toast("📥 Скачайте и откройте через «📁 Выбрать файл»");
+          toast("📥 Скачайте и откройте через «📁 Файл»");
         });
       }
     }
@@ -465,9 +546,22 @@
         else player.pause();
       });
     }
-    player.addEventListener("play",  () => { if (btnPlay) btnPlay.textContent = "⏸"; specStart(); });
-    player.addEventListener("pause", () => { if (btnPlay) btnPlay.textContent = "▶";  specStop(); });
-    player.addEventListener("ended", () => { if (btnPlay) btnPlay.textContent = "▶";  specStop(); });
+
+    player.addEventListener("play",  () => {
+      if (btnPlay) btnPlay.textContent = "⏸";
+      syncOverlay();
+      specStart();
+    });
+    player.addEventListener("pause", () => {
+      if (btnPlay) btnPlay.textContent = "▶";
+      syncOverlay();
+      specStop();
+    });
+    player.addEventListener("ended", () => {
+      if (btnPlay) btnPlay.textContent = "▶";
+      syncOverlay();
+      specStop();
+    });
     player.addEventListener("seeked", () => { if (!player.paused) specClear(); });
 
     /* progress bar & time */
@@ -476,7 +570,7 @@
       if (playProgress && player.duration)
         playProgress.value = (player.currentTime / player.duration * 1000).toFixed(0);
       if (playTime)
-        playTime.textContent = fmtTime(player.currentTime) + " / " + fmtTime(player.duration);
+        playTime.textContent = fmtTime(player.currentTime) + "/" + fmtTime(player.duration);
     });
     if (playProgress) {
       playProgress.addEventListener("input", () => {
@@ -488,6 +582,7 @@
       if (btnStart) btnStart.disabled = false;
       if (btnEnd)   btnEnd.disabled   = false;
       renderSegStatus();
+      syncOverlay();
     });
     player.addEventListener("loadeddata", () => {
       if (btnLoadLocal) btnLoadLocal.classList.remove("pulse");
@@ -497,24 +592,19 @@
 
     /* spectrogram UI */
     if (specToggle && specWrap) {
-  specToggle.addEventListener("click", () => {
-    const c = specWrap.classList.toggle("collapsed");
-    specToggle.textContent = c ? "📊 Спектрограмма ▸" : "📊 Спектрограмма ▾";
-    if (!c) {
-      // wait for CSS transition to finish, then reset canvas
-      setTimeout(() => {
-        if (spec) spec.resetCanvas();
-        // if player is playing, restart drawing
-        if (spec && !player.paused) {
-          spec.ensureAudio();
-          spec.start();
+      specToggle.addEventListener("click", () => {
+        const c = specWrap.classList.toggle("collapsed");
+        specToggle.textContent = c ? "📊 Спектр ▸" : "📊 Спектр ▾";
+        if (!c) {
+          setTimeout(() => {
+            if (spec) spec.resetCanvas();
+            if (spec && !player.paused) { spec.ensureAudio(); spec.start(); }
+          }, 300);
+        } else {
+          if (spec) spec.stop();
         }
-      }, 300);
-    } else {
-      if (spec) spec.stop();
+      });
     }
-  });
-}
     function updateZL() { if (specZoomLbl && spec) specZoomLbl.textContent = `×${spec.getZoom()}`; }
     if (specZoomIn)  specZoomIn.addEventListener("click",  () => { if (spec) { spec.zoomIn();  updateZL(); } });
     if (specZoomOut) specZoomOut.addEventListener("click", () => { if (spec) { spec.zoomOut(); updateZL(); } });
@@ -546,7 +636,6 @@
       player.currentTime = Number(s);
       specClear();
       player.play().catch(() => {});
-      // specStart() will be called by the "play" event
 
       loopTimer = setInterval(() => {
         if (!player || player.paused) return;
@@ -669,7 +758,7 @@
         if (it.phonetic) acts.appendChild(mb("👂", "tiny", () => phonRow.classList.toggle("visible")));
         acts.appendChild(mb("💬", "tiny", () => transRow.classList.toggle("visible")));
         if (it.why) acts.appendChild(mb("🧠", "tiny", () => whyRow.classList.toggle("visible")));
-        acts.appendChild(mb(it.learned ? "✓ Выучено" : "Выучено",
+        acts.appendChild(mb(it.learned ? "✓" : "☐",
           "tiny " + (it.learned ? "btn-good" : ""),
           () => { it.learned = !it.learned; save(); renderLines(); }));
 
@@ -776,9 +865,27 @@
     render();
   }
 
-  /* boot */
+  /* ══════════════════════════════════════
+     BOOT
+     ══════════════════════════════════════ */
   window.addEventListener("DOMContentLoaded", async () => {
     showStorageConsent();
+
+    /* ── Logo auto-hide on scroll ── */
+    (function(){
+      const logo = document.getElementById("logoBar");
+      if (!logo) return;
+      let lastY = 0;
+      window.addEventListener("scroll", () => {
+        const y = window.scrollY;
+        // scrolling down & past 60px → hide
+        if (y > lastY && y > 60) logo.classList.add("hidden");
+        // scrolling up → show
+        else logo.classList.remove("hidden");
+        lastY = y;
+      }, { passive: true });
+    })();
+
     try { await bootSongPage(); } catch(e) { console.error("bootSongPage error:", e); }
     try { await bootHome(); }     catch(e) { console.error("bootHome error:", e); }
   });
