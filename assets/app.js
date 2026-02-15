@@ -264,16 +264,16 @@
         const bin = Math.floor((1 - y / H) * visBins);
         const raw = freqData[bin] || 0;
 
-        // normalize to 0..1 using adaptive range
-        let norm = (raw - floor) / range;
-                // gamma: higher = darker background, brighter peaks
+                // normalize to 0..1 using adaptive range
+        let norm = range > 0 ? (raw - floor) / range : 0;
+        if (!isFinite(norm)) norm = 0;
+        norm = Math.max(0, Math.min(1, norm));
+
+        // gamma: lift quiet parts
         norm = Math.pow(norm, 0.45);
 
-        // apply gamma curve for better contrast (lift quiet parts)
-        norm = Math.pow(norm, 0.6);
-
-        const idx = Math.round(norm * 255);
-        const c = LUT[idx];
+        const idx = Math.max(0, Math.min(255, Math.round(norm * 255)));
+        const c = LUT[idx] || LUT[0];
         const off = y * 4;
         d[off] = c[0]; d[off+1] = c[1]; d[off+2] = c[2]; d[off+3] = 255;
       }
