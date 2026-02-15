@@ -1,4 +1,4 @@
-;;(function () {
+;(function () {
   /* ── helpers ── */
   const $ = (s, r = document) => r.querySelector(s);
 
@@ -91,14 +91,13 @@
   }
 
   /* ══════════════════════════════════════
-     Spectrogram Engine
+     Spectrogram Engine (unchanged)
      ══════════════════════════════════════ */
-      function createSpectrogram(canvas, playerEl) {
+  function createSpectrogram(canvas, playerEl) {
     const ctx = canvas.getContext("2d");
     let audioCtx = null, analyser = null, source = null;
     let connected = false, rafId = null, running = false;
 
-    // ── LUT: чёрный → фиолет → розовый → голубой → лазурный ──
     const STOPS = [
       [0.00,   4,   2,  12],
       [0.10,  25,  10,  55],
@@ -121,25 +120,23 @@
       const range = STOPS[hi][0] - STOPS[lo][0] || 1;
       const f = (t - STOPS[lo][0]) / range;
       LUT[i] = [
-        Math.round(STOPS[lo][1] + (STOPS[hi][1] - STOPS[lo][1]) * f),
-        Math.round(STOPS[lo][2] + (STOPS[hi][2] - STOPS[lo][2]) * f),
-        Math.round(STOPS[lo][3] + (STOPS[hi][3] - STOPS[lo][3]) * f)
+        Math.round(STOPS[lo][[1]](#annotation-100661-0) + (STOPS[hi][[1]](#annotation-100661-0) - STOPS[lo][[1]](#annotation-100661-0)) * f),
+        Math.round(STOPS[lo][[2]](#annotation-100661-1) + (STOPS[hi][[2]](#annotation-100661-1) - STOPS[lo][[2]](#annotation-100661-1)) * f),
+        Math.round(STOPS[lo][[3]](#annotation-100661-2) + (STOPS[hi][[3]](#annotation-100661-2) - STOPS[lo][[3]](#annotation-100661-2)) * f)
       ];
     }
 
     let zoom = 1, writeX = 0, freqData = null;
-
-    // Noise floor: auto-adapts to the signal
     let noiseFloor = 5;
     let peakVal = 80;
 
-        const FREQ_ZONES = [
+    const FREQ_ZONES = [
       { freq: 300,  label: "300 Hz",  desc: "гласные",    color: "rgba(55,230,255,0.45)" },
-      { freq: 3000, label: "3 kHz",   desc: "согласные",   color: "rgba(215,60,195,0.45)" },
-      { freq: 6000, label: "6 kHz",   desc: "шипящие",     color: "rgba(155,95,238,0.4)" },
+      { freq: 3000, label: "3 kHz",   desc: "согласные",  color: "rgba(215,60,195,0.45)" },
+      { freq: 6000, label: "6 kHz",   desc: "шипящие",    color: "rgba(155,95,238,0.4)" },
     ];
 
-        const ZONE_BANDS = [
+    const ZONE_BANDS = [
       { from: 0,    to: 300,   bg: "rgba(55,230,255,0.015)" },
       { from: 300,  to: 3000,  bg: "rgba(215,60,195,0.012)" },
       { from: 3000, to: 24000, bg: "rgba(155,95,238,0.01)" },
@@ -223,7 +220,7 @@
       canvas.width  = Math.round(r.width  * dpr);
       canvas.height = Math.round(r.height * dpr);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = `rgb(${LUT[0][0]},${LUT[0][1]},${LUT[0][2]})`;
+      ctx.fillStyle = `rgb(${LUT[0][0]},${LUT[0][[1]](#annotation-100661-0)},${LUT[0][[2]](#annotation-100661-1)})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       writeX = 0;
       noiseFloor = 5; peakVal = 80;
@@ -244,14 +241,12 @@
       const totalBins = analyser.frequencyBinCount;
       const visBins = Math.floor(totalBins / zoom);
 
-      // ── auto-range: find current frame min/max ──
       let frameMin = 255, frameMax = 0;
       for (let b = 0; b < visBins; b++) {
         const v = freqData[b];
         if (v < frameMin) frameMin = v;
         if (v > frameMax) frameMax = v;
       }
-      // smooth adaptation
       noiseFloor += (frameMin - noiseFloor) * 0.05;
       peakVal    += (Math.max(frameMax, noiseFloor + 20) - peakVal) * 0.08;
       const floor = Math.max(0, noiseFloor - 2);
@@ -263,19 +258,14 @@
       for (let y = 0; y < H; y++) {
         const bin = Math.floor((1 - y / H) * visBins);
         const raw = freqData[bin] || 0;
-
-                // normalize to 0..1 using adaptive range
         let norm = range > 0 ? (raw - floor) / range : 0;
         if (!isFinite(norm)) norm = 0;
         norm = Math.max(0, Math.min(1, norm));
-
-        // gamma: lift quiet parts
         norm = Math.pow(norm, 0.45);
-
         const idx = Math.max(0, Math.min(255, Math.round(norm * 255)));
         const c = LUT[idx] || LUT[0];
         const off = y * 4;
-        d[off] = c[0]; d[off+1] = c[1]; d[off+2] = c[2]; d[off+3] = 255;
+        d[off] = c[0]; d[off+1] = c[[1]](#annotation-100661-0); d[off+2] = c[[2]](#annotation-100661-1); d[off+3] = 255;
       }
 
       ctx.putImageData(col, writeX, 0);
@@ -388,6 +378,7 @@
     /* ── DOM refs ── */
     const player         = $("#player");
     const videoWrap      = $("#videoWrap");
+    const btnPlayOverlay = $("#btnPlayOverlay");
     const mediaPick      = $("#mediaPick");
     const btnLoadLocal   = $("#btnLoadLocal");
     const btnLoadYaDisk  = $("#btnLoadYaDisk");
@@ -478,6 +469,32 @@
     }
     applyMode(false);
 
+    /* ── Play overlay on video ── */
+    function syncOverlay() {
+      if (!btnPlayOverlay || !videoWrap) return;
+      if (player.paused) videoWrap.classList.add("paused");
+      else videoWrap.classList.remove("paused");
+      btnPlayOverlay.textContent = player.paused ? "▶" : "⏸";
+    }
+
+    if (btnPlayOverlay) {
+      btnPlayOverlay.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!player.src && !player.currentSrc) { toast("Сначала выберите файл"); return; }
+        if (player.paused) player.play().catch(() => {});
+        else player.pause();
+      });
+    }
+
+    if (videoWrap) {
+      videoWrap.addEventListener("click", (e) => {
+        if (e.target.closest("button")) return;
+        if (!player.src && !player.currentSrc) return;
+        if (player.paused) player.play().catch(() => {});
+        else player.pause();
+      });
+    }
+
     /* ── Spectrogram helpers ── */
     function ensureSpec() {
       if (!spec && specCanvas) {
@@ -549,7 +566,7 @@
         btnLoadYaDisk.addEventListener("click", () => {
           window.open(yd, "yadisk", "width=700,height=500");
           if (btnLoadLocal) btnLoadLocal.classList.add("pulse");
-          toast("📥 Скачайте и откройте через «📁 Выбрать файл»");
+          toast("📥 Скачайте и откройте через «📁 Файл»");
         });
       }
     }
@@ -569,9 +586,21 @@
         else player.pause();
       });
     }
-    player.addEventListener("play",  () => { if (btnPlay) btnPlay.textContent = "⏸"; specStart(); });
-    player.addEventListener("pause", () => { if (btnPlay) btnPlay.textContent = "▶";  specStop(); });
-    player.addEventListener("ended", () => { if (btnPlay) btnPlay.textContent = "▶";  specStop(); });
+    player.addEventListener("play",  () => {
+      if (btnPlay) btnPlay.textContent = "⏸";
+      syncOverlay();
+      specStart();
+    });
+    player.addEventListener("pause", () => {
+      if (btnPlay) btnPlay.textContent = "▶";
+      syncOverlay();
+      specStop();
+    });
+    player.addEventListener("ended", () => {
+      if (btnPlay) btnPlay.textContent = "▶";
+      syncOverlay();
+      specStop();
+    });
     player.addEventListener("seeked", () => { if (!player.paused) specClear(); });
 
     /* progress bar & time */
@@ -580,7 +609,7 @@
       if (playProgress && player.duration)
         playProgress.value = (player.currentTime / player.duration * 1000).toFixed(0);
       if (playTime)
-        playTime.textContent = fmtTime(player.currentTime) + " / " + fmtTime(player.duration);
+        playTime.textContent = fmtTime(player.currentTime) + "/" + fmtTime(player.duration);
     });
     if (playProgress) {
       playProgress.addEventListener("input", () => {
@@ -592,6 +621,7 @@
       if (btnStart) btnStart.disabled = false;
       if (btnEnd)   btnEnd.disabled   = false;
       renderSegStatus();
+      syncOverlay();
     });
     player.addEventListener("loadeddata", () => {
       if (btnLoadLocal) btnLoadLocal.classList.remove("pulse");
@@ -877,9 +907,25 @@
     render();
   }
 
-  /* boot */
+  /* ══════════════════════════════════════
+     BOOT
+     ══════════════════════════════════════ */
   window.addEventListener("DOMContentLoaded", async () => {
     showStorageConsent();
+
+    /* ── Logo auto-hide/show on scroll ── */
+    (function(){
+      const logo = document.getElementById("logoBar");
+      if (!logo) return;
+      let lastY = 0;
+      window.addEventListener("scroll", () => {
+        const y = window.scrollY;
+        if (y > lastY && y > 60) logo.classList.add("hidden");
+        else logo.classList.remove("hidden");
+        lastY = y;
+      }, { passive: true });
+    })();
+
     try { await bootSongPage(); } catch(e) { console.error("bootSongPage error:", e); }
     try { await bootHome(); }     catch(e) { console.error("bootHome error:", e); }
   });
