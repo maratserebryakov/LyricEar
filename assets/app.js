@@ -117,11 +117,11 @@
       }
       var range = STOPS[hi][0] - STOPS[lo][0] || 1;
       var f = (t - STOPS[lo][0]) / range;
-      LUT[i] = [
-        Math.round(STOPS[lo][[1]](#annotation-101793-0) + (STOPS[hi][[1]](#annotation-101793-0) - STOPS[lo][[1]](#annotation-101793-0)) * f),
-        Math.round(STOPS[lo][[2]](#annotation-101793-1) + (STOPS[hi][[2]](#annotation-101793-1) - STOPS[lo][[2]](#annotation-101793-1)) * f),
-        Math.round(STOPS[lo][[3]](#annotation-101793-2) + (STOPS[hi][[3]](#annotation-101793-2) - STOPS[lo][[3]](#annotation-101793-2)) * f)
-      ];
+     LUT[i] = [
+  Math.round(STOPS[lo][1] + (STOPS[hi][1] - STOPS[lo][1]) * f),
+  Math.round(STOPS[lo][2] + (STOPS[hi][2] - STOPS[lo][2]) * f),
+  Math.round(STOPS[lo][3] + (STOPS[hi][3] - STOPS[lo][3]) * f)
+];
     }
 
     var zoom = 1, writeX = 0, freqData = null;
