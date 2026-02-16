@@ -92,7 +92,7 @@
      Spectrogram Engine
      ══════════════════════════════════════ */
   function createSpectrogram(canvas, playerEl) {
-    var ctx = canvas.getContext("2d");
+    var ctx = canvas.getContext("2d", { willReadFrequently: true });
     var audioCtx = null, analyser = null, source = null;
     var connected = false, rafId = null, running = false;
 
@@ -117,7 +117,7 @@
       }
       var range = STOPS[hi][0] - STOPS[lo][0] || 1;
       var f = (t - STOPS[lo][0]) / range;
-     LUT[i] = [
+      LUT[i] = [
   Math.round(STOPS[lo][1] + (STOPS[hi][1] - STOPS[lo][1]) * f),
   Math.round(STOPS[lo][2] + (STOPS[hi][2] - STOPS[lo][2]) * f),
   Math.round(STOPS[lo][3] + (STOPS[hi][3] - STOPS[lo][3]) * f)
@@ -235,7 +235,7 @@
       canvas.width  = Math.round(r.width  * dpr);
       canvas.height = Math.round(r.height * dpr);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = "rgb(" + LUT[0][0] + "," + LUT[0][[1]](#annotation-101793-0) + "," + LUT[0][[2]](#annotation-101793-1) + ")";
+      ctx.fillStyle = "rgb(" + LUT[0][0] + "," + LUT[0][1] + "," + LUT[0][2] + ")";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       computeLabelMargin();
       writeX = labelMargin; // start drawing AFTER labels
@@ -254,7 +254,7 @@
         if (dataW > 1) {
           var img = ctx.getImageData(labelMargin + 1, 0, dataW - 1, H);
           // clear whole canvas and redraw
-          ctx.fillStyle = "rgb(" + LUT[0][0] + "," + LUT[0][[1]](#annotation-101793-0) + "," + LUT[0][[2]](#annotation-101793-1) + ")";
+          ctx.fillStyle = "rgb(" + LUT[0][0] + "," + LUT[0][1] + "," + LUT[0][2] + ")";
           ctx.fillRect(0, 0, W, H);
           ctx.putImageData(img, labelMargin, 0);
           drawZones();
@@ -289,7 +289,7 @@
         var idx = Math.max(0, Math.min(255, Math.round(norm * 255)));
         var c = LUT[idx] || LUT[0];
         var off = y * 4;
-        d[off] = c[0]; d[off+1] = c[[1]](#annotation-101793-0); d[off+2] = c[[2]](#annotation-101793-1); d[off+3] = 255;
+        d[off] = c[0]; d[off+1] = c[1]; d[off+2] = c[2]; d[off+3] = 255;
       }
 
       ctx.putImageData(col, writeX, 0);
