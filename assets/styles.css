@@ -457,3 +457,18 @@ button:disabled { opacity: .35; cursor: default; }
 @media (min-width: 700px) {
   .spec-wrap { height: 130px; }
 }
+/* Desktop two-column layout */
+@media (min-width: 900px) {
+  .main-layout {
+    display: flex;
+    align-items: flex-start;
+  }
+  .col-player {
+    position: sticky;
+    top: 0;
+    flex-shrink: 0;
+  }
+  .sticky-block {
+    position: static;
+  }
+}
