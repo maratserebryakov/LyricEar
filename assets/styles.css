@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════
-   LyricEar — styles.css  v6
+   LyricEar — styles.css  v7
    ══════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -147,6 +147,7 @@ button:disabled { opacity: .35; cursor: default; }
   position: sticky;
   top: 0;
   z-index: 100;
+  background: var(--bg);
 }
 
 /* ── Player ── */
@@ -164,7 +165,7 @@ button:disabled { opacity: .35; cursor: default; }
   object-fit: cover; object-position: center 60%;
   display: block;
 }
-.video-wrap.is-audio { height: 0; overflow: hidden; }
+.video-wrap.is-audio { height: auto; overflow: visible; }
 .video-wrap.is-audio video { display: none; }
 
 /* Timecode overlay — bottom right of video */
@@ -178,7 +179,7 @@ button:disabled { opacity: .35; cursor: default; }
   border-radius: 4px;
   pointer-events: none;
   z-index: 2;
-  display: none; /* shown only when video visible */
+  display: none;
 }
 .video-wrap.is-video .video-timecode { display: block; }
 
@@ -195,6 +196,42 @@ button:disabled { opacity: .35; cursor: default; }
 }
 .video-wrap.paused .play-overlay { opacity: 1; pointer-events: auto; }
 
+/* ── Overlay progress bar (seek) ── */
+.overlay-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  display: flex;
+  align-items: flex-end;
+  z-index: 3;
+  padding: 0 4px 2px;
+}
+
+.overlay-progress input[type="range"] {
+  width: 100%;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+  opacity: 0.7;
+  transition: opacity 0.2s, height 0.2s;
+}
+
+.overlay-progress input[type="range"]:hover {
+  opacity: 1;
+  height: 6px;
+}
+
+/* Для audio — ползунок видимый отдельной строкой */
+.video-wrap.is-audio .overlay-progress {
+  position: relative;
+  height: 24px;
+  padding: 8px 0 0;
+}
+
 /* ── Media source (collapsible after load) ── */
 .media-source {
   margin-top: 8px;
@@ -210,26 +247,9 @@ button:disabled { opacity: .35; cursor: default; }
   flex-wrap: wrap;
 }
 
-/* ── Play row ── */
+/* ── Play row (HIDDEN — replaced by overlay seek) ── */
 .play-row {
-  display: flex; align-items: center; gap: 10px;
-  margin: 6px 0; padding: 0;
-}
-#btnPlay {
-  font-size: 24px; width: 44px; height: 44px;
-  border-radius: 50%; border: 2px solid var(--accent);
-  background: var(--surface); color: var(--accent);
-  cursor: pointer; display: flex; align-items: center;
-  justify-content: center; flex-shrink: 0; padding: 0;
-}
-#btnPlay:active { background: var(--accent); color: #fff; }
-#playTime {
-  font-family: monospace; font-size: 13px;
-  color: var(--muted); white-space: nowrap;
-}
-#playProgress {
-  flex: 1; height: 6px; border-radius: 3px;
-  accent-color: var(--accent); cursor: pointer;
+  display: none;
 }
 
 /* ── Lamp ── */
@@ -385,9 +405,17 @@ button:disabled { opacity: .35; cursor: default; }
   .col-player {
     flex: none;
     width: 100%;
+    position: static;
   }
   .col-lines {
     width: 100%;
+  }
+
+  .sticky-block {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg);
   }
 }
 
@@ -409,10 +437,6 @@ button:disabled { opacity: .35; cursor: default; }
 
   .spec-zoom-btn { width: 30px; height: 30px; font-size: 16px; border-radius: 8px; }
   #specZoomLabel { font-size: 0.72rem; }
-
-  .play-row { gap: 6px; margin: 3px 0; }
-  #playTime { font-size: 11px; }
-  #playProgress { height: 5px; }
 
   .media-btns { gap: 5px; }
   #mediaName { font-size: 0.72rem; }
@@ -457,7 +481,10 @@ button:disabled { opacity: .35; cursor: default; }
 @media (min-width: 700px) {
   .spec-wrap { height: 130px; }
 }
-/* Desktop two-column layout */
+
+/* ══════════════════════════════════════
+   Desktop two-column layout (≥ 900px)
+   ══════════════════════════════════════ */
 @media (min-width: 900px) {
   .main-layout {
     display: flex;
