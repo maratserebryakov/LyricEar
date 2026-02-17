@@ -70,11 +70,13 @@
         <section class="panel player-panel">
           <!-- Video area with overlay timecode -->
           <div id="videoWrap" class="video-wrap is-audio">
-            <video id="player" playsinline preload="auto"></video>
-            <button id="btnPlayOverlay" class="play-overlay" aria-label="Play/Pause">▶</button>
-            <span class="video-timecode mono" id="tNow">0.00s</span>
-          </div>
-
+  <video id="player" preload="auto" playsinline></video>
+  <span id="videoTimecode" class="video-timecode">0:00</span>
+  <button id="btnPlayOverlay" class="play-overlay">▶</button>
+  <div class="overlay-progress">
+    <input type="range" id="overlaySeek" min="0" max="1000" value="0">
+  </div>
+</div>
           <!-- Media source buttons — collapsible -->
           <div class="media-source" id="mediaSource">
             <div class="media-btns">
