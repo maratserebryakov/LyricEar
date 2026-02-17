@@ -118,16 +118,16 @@
       var range = STOPS[hi][0] - STOPS[lo][0] || 1;
       var f = (t - STOPS[lo][0]) / range;
       LUT[i] = [
-  Math.round(STOPS[lo][1] + (STOPS[hi][1] - STOPS[lo][1]) * f),
-  Math.round(STOPS[lo][2] + (STOPS[hi][2] - STOPS[lo][2]) * f),
-  Math.round(STOPS[lo][3] + (STOPS[hi][3] - STOPS[lo][3]) * f)
-];
+        Math.round(STOPS[lo][1] + (STOPS[hi][1] - STOPS[lo][1]) * f),
+        Math.round(STOPS[lo][2] + (STOPS[hi][2] - STOPS[lo][2]) * f),
+        Math.round(STOPS[lo][3] + (STOPS[hi][3] - STOPS[lo][3]) * f)
+      ];
     }
 
     var zoom = 1, writeX = 0, freqData = null;
     var noiseFloor = 5;
     var peakVal = 80;
-    var labelMargin = 0; // computed after first drawZones
+    var labelMargin = 0;
 
     var FREQ_ZONES = [
       { freq: 300,  label: "300 Hz",  desc: "гласные",   color: "rgba(55,230,255,0.45)" },
@@ -151,7 +151,6 @@
       return r > 1 ? -1 : Math.round(H * (1 - r));
     }
 
-    /* Compute the pixel width of zone labels so writeX starts after them */
     function computeLabelMargin() {
       var dpr = window.devicePixelRatio || 1;
       var fs = Math.round(10 * dpr);
@@ -238,7 +237,7 @@
       ctx.fillStyle = "rgb(" + LUT[0][0] + "," + LUT[0][1] + "," + LUT[0][2] + ")";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       computeLabelMargin();
-      writeX = labelMargin; // start drawing AFTER labels
+      writeX = labelMargin;
       noiseFloor = 5; peakVal = 80;
       drawZones();
     }
@@ -249,11 +248,9 @@
 
       var W = canvas.width, H = canvas.height;
       if (writeX >= W) {
-        // scroll: shift everything left but keep label area
         var dataW = W - labelMargin;
         if (dataW > 1) {
           var img = ctx.getImageData(labelMargin + 1, 0, dataW - 1, H);
-          // clear whole canvas and redraw
           ctx.fillStyle = "rgb(" + LUT[0][0] + "," + LUT[0][1] + "," + LUT[0][2] + ")";
           ctx.fillRect(0, 0, W, H);
           ctx.putImageData(img, labelMargin, 0);
@@ -414,6 +411,7 @@
     var btnPlay        = $("#btnPlay");
     var playProgress   = $("#playProgress");
     var playTime       = $("#playTime");
+    var overlaySeek    = $("#overlaySeek");
     var btnPlaySeg     = $("#btnPlaySeg");
     var btnStart       = $("#btnStart");
     var btnEnd         = $("#btnEnd");
@@ -522,6 +520,7 @@
     if (videoWrap) {
       videoWrap.addEventListener("click", function(e) {
         if (e.target.closest("button")) return;
+        if (e.target.closest(".overlay-progress")) return;
         if (!player.src && !player.currentSrc) return;
         if (player.paused) player.play().catch(function(){});
         else player.pause();
@@ -632,18 +631,27 @@
       specStop();
     });
     player.addEventListener("ended", function() {
+      /* If loop is checked and no segment is playing → loop whole track */
+      if (loopToggle && loopToggle.checked && !loopTimer) {
+        player.currentTime = 0;
+        specClear();
+        player.play().catch(function(){});
+        return;
+      }
       if (btnPlay) btnPlay.textContent = "\u25B6";
       syncOverlay();
       specStop();
     });
     player.addEventListener("seeked", function() { if (!player.paused) specClear(); });
 
-    /* progress bar + timecode */
+    /* progress bar + timecode + overlay seek */
     player.addEventListener("timeupdate", function() {
       var ct = player.currentTime || 0;
       if (elNow) elNow.textContent = ct.toFixed(2) + "s";
       if (playProgress && player.duration)
         playProgress.value = (ct / player.duration * 1000).toFixed(0);
+      if (overlaySeek && player.duration)
+        overlaySeek.value = (ct / player.duration * 1000).toFixed(0);
       if (playTime)
         playTime.textContent = fmtTime(ct) + "/" + fmtTime(player.duration);
     });
@@ -651,6 +659,12 @@
       playProgress.addEventListener("input", function() {
         if (player.duration) player.currentTime = (playProgress.value / 1000) * player.duration;
       });
+    }
+    if (overlaySeek) {
+      overlaySeek.addEventListener("input", function() {
+        if (player.duration) player.currentTime = (overlaySeek.value / 1000) * player.duration;
+      });
+      overlaySeek.addEventListener("click", function(e) { e.stopPropagation(); });
     }
 
     player.addEventListener("loadedmetadata", function() {
@@ -766,7 +780,6 @@
       if (seek && it && it.start != null && Number.isFinite(it.start))
         player.currentTime = Math.max(0, Number(it.start));
 
-      /* scroll active line into view */
       var el = linesHost.children[activeIndex];
       if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
@@ -898,7 +911,6 @@
       var tag = (e.target.tagName || "").toLowerCase();
       var inInput = (tag === "input" || tag === "textarea");
 
-      // Space — play/pause (always, even in input with Ctrl)
       if (e.key === " " && (!inInput || e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         if (!player.src && !player.currentSrc) return;
@@ -906,15 +918,12 @@
         return;
       }
 
-      // Shortcuts that work only outside inputs
       if (inInput) return;
 
       var k = e.key.toLowerCase();
 
-      // S — set start mark
       if (k === "s") { e.preventDefault(); if (btnStart && !btnStart.disabled) btnStart.click(); }
 
-      // E — set end mark, auto-advance
       if (k === "e") {
         e.preventDefault();
         if (btnEnd && !btnEnd.disabled) btnEnd.click();
@@ -922,34 +931,28 @@
         if (nx !== activeIndex) setTimeout(function() { setActive(nx, false); }, 100);
       }
 
-      // Arrow down / N — next line
       if (k === "arrowdown" || k === "n") {
         e.preventDefault();
         setActive(Math.min(activeIndex + 1, state.items.length - 1), false);
       }
 
-      // Arrow up / P — prev line
       if (k === "arrowup" || k === "p") {
         e.preventDefault();
         setActive(Math.max(activeIndex - 1, 0), false);
       }
 
-      // R — replay segment
       if (k === "r") { e.preventDefault(); playSegment(); }
 
-      // L — toggle loop
       if (k === "l") {
         e.preventDefault();
         if (loopToggle) { loopToggle.checked = !loopToggle.checked; }
       }
 
-      // Arrow left — seek back 3s
       if (k === "arrowleft") {
         e.preventDefault();
         if (player.duration) player.currentTime = Math.max(0, player.currentTime - 3);
       }
 
-      // Arrow right — seek forward 3s
       if (k === "arrowright") {
         e.preventDefault();
         if (player.duration) player.currentTime = Math.min(player.duration, player.currentTime + 3);
@@ -1005,7 +1008,6 @@
   window.addEventListener("DOMContentLoaded", async function() {
     showStorageConsent();
 
-    /* Logo auto-hide on scroll */
     var logo = document.getElementById("logoBar");
     if (logo) {
       var lastY = 0;
