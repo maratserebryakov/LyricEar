@@ -396,17 +396,23 @@ button:disabled { opacity: .35; cursor: default; }
 /* ══════════════════════════════════════
    RESPONSIVE: single column ≤ 800px
    ══════════════════════════════════════ */
+/* ══════════════════════════════════════
+   RESPONSIVE: single column ≤ 800px
+   Sticky прилипает к main-layout,
+   который содержит и player, и lines
+   ══════════════════════════════════════ */
 @media (max-width: 800px) {
   body { max-width: 720px; }
 
   .main-layout {
-    flex-direction: column;
+    display: block;          /* не flex — один поток */
+    position: relative;      /* sticky-контекст */
   }
+
   .col-player {
-    flex: none;
-    width: 100%;
-    position: static;
+    display: contents;       /* ← магия: убирает обёртку из потока */
   }
+
   .col-lines {
     width: 100%;
   }
@@ -416,9 +422,15 @@ button:disabled { opacity: .35; cursor: default; }
     top: 0;
     z-index: 100;
     background: var(--bg);
+    padding-bottom: 4px;
+  }
+
+  /* seg-panel — просто идёт потоком между sticky и lines */
+  .seg-panel {
+    position: relative;
+    z-index: 50;
   }
 }
-
 /* ══════════════════════════════════════
    MOBILE COMPACT  (max-width: 600px)
    ══════════════════════════════════════ */
